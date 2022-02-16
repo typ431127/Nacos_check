@@ -33,7 +33,7 @@ golang 萌新，写的不好大佬勿喷... 😊
 */3 * * * * /data/script/nacos_check -url http://nacos-1:8848  -ipfile /data/script/ip.json -noconsole
 ```
 
-prometheus 可以结合http探针使用
+prometheus 可以结合blackbox_exporter使用
 
 ```yml
 file_sd_configs:
