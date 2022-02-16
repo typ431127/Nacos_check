@@ -90,7 +90,7 @@ type nacosfile struct {
 }
 
 func init() {
-	flag.StringVar(&nacosurl,"url", "http://nacos-0.nacos-headless.mall.svc.cluster.local:8848", "nacos地址")
+	flag.StringVar(&nacosurl,"url", "http://nacos.ddn.svc.cluster.local:8848", "nacos地址")
 	flag.StringVar(&prometheusfile,"write","/data/work/prometheus/discovery/nacos.json","prometheus 自动发现文件路径")
 	flag.StringVar(&ipfile,"ipfile", "salt_ip.json", "ip解析文件")
 	flag.StringVar(&findstr,"find","","查找服务")
