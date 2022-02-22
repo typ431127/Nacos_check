@@ -1,6 +1,6 @@
 # Nacos 检查工具
 
-方便运维查看nacos注册服务，同时生成prometheus自动发现所需要的json文件。   
+旨在方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
 golang 萌新，写的不好大佬勿喷... 😊
 
 ### 使用
