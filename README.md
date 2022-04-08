@@ -49,6 +49,9 @@ file_sd_configs:
 ![image](https://user-images.githubusercontent.com/20376675/154187473-96ced8e9-2c04-46aa-85b7-f3e44100e68d.png)
 find 快速查找服务
 ![image](https://user-images.githubusercontent.com/20376675/154187373-e180e679-0885-48cd-8b46-be3ad89fd53a.png)
+集群状态显示
+![image](https://user-images.githubusercontent.com/20376675/162390568-f7c69520-e5ff-4470-8249-b907a65c636c.png)
+
 
 
 ### grafana
