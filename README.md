@@ -1,6 +1,6 @@
 # Nacos 检查工具
 
-方便运维查看nacos注册服务，同时生成prometheus自动发现所需要的json文件。   
+旨在方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
 golang 萌新，写的不好大佬勿喷... 😊
 
 ### 使用
@@ -26,6 +26,10 @@ golang 萌新，写的不好大佬勿喷... 😊
     "test2": "10.x.x.x",
 }
 ```
+也可以使用salt批量获取主机名与ip的对应json关系
+```shell
+salt '*' network.interface_ip  eth0 --out=json --static -t 10  > /tmp/ip.json
+```
 
 定时任务示例
 
@@ -38,8 +42,8 @@ prometheus 可以结合blackbox_exporter使用
 ```yml
 file_sd_configs:
   - files:
-      - '/data/work/prometheus/check_nginx/*.json'
-      refresh_interval: 5m
+      - '/data/work/prometheus/discovery/*.json'
+      refresh_interval: 3m
 ```
 ### 效果
 ![image](https://user-images.githubusercontent.com/20376675/154187473-96ced8e9-2c04-46aa-85b7-f3e44100e68d.png)
