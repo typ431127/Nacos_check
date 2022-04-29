@@ -4,37 +4,60 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/tidwall/gjson"
 	"go/types"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/tidwall/gjson"
 )
 
-var nacosurl string          // nacos url地址
-var findstr string           // 模糊匹配服务
-var noconsole bool           // 是否控制台输出
-var prometheusfile string    // prometheus 文件路径
-var ipfile string            // ip hostname 解析文件
-var ipparse bool             // 是否启用ip解析
-var ipdata map[string]string // 全部ip数据
+var (
+	nacosurl       string            // nacos url地址
+	findstr        string            // 模糊匹配服务
+	noconsole      bool              // 是否控制台输出
+	writefile      string            // prometheus 字段 文件路径
+	ipfile         string            // ip hostname 解析文件
+	ipparse        bool              // 是否启用ip解析
+	cluster_status bool              // 集群状态
+	ipdata         map[string]string // 全部ip数据
+	exitcode       int               // 全局退出状态码
+	version        bool              // 版本
+	watch          bool              // 监控
+	second         time.Duration     // 监控服务间隔
+)
 
-type nacos struct {
+type Nacos struct {
 	Client         http.Client
-	Namespaces     namespaces
+	Namespaces     Namespaces
+	DefaultUlr     string
+	Host           string
+	Scheme         string
 	Healthydata    [][]string
 	Healthydataerr [][]string
 	AllInstance    [][]string
 	Cluster        string
+	clusterdata    map[string]ClusterStatus // 集群状态数据
 }
 
-type namespaceser struct {
+type ClusterStatus struct {
+	Ip               string
+	Port             string
+	state            string
+	Version          string
+	LastRefreshTime  string
+	HealthInstance   [][]string
+	UnHealthInstance [][]string
+}
+
+type NamespaceServer struct {
 	Namespace         string `json:"namespace"`
 	NamespaceShowName string `json:"namespaceShowName"`
 	Quota             int    `json:"quota"`
@@ -42,10 +65,10 @@ type namespaceser struct {
 	Type              int    `json:"type"`
 }
 
-type namespaces struct {
-	Code    int            `json:"code"`
-	Message types.Nil      `json:"message"`
-	Data    []namespaceser `json:"data"`
+type Namespaces struct {
+	Code    int               `json:"code"`
+	Message types.Nil         `json:"message"`
+	Data    []NamespaceServer `json:"data"`
 }
 
 type service struct {
@@ -82,51 +105,56 @@ type Instances struct {
 	InstanceHeartBeatInterval int64   `json:"instanceHeartBeatInterval"`
 }
 
-type nacostarget struct {
+type NacosTarget struct {
 	Targets []string          `json:"targets"`
 	Labels  map[string]string `json:"labels"`
 }
 
-type nacosfile struct {
-	Data []nacostarget
+type NacosFile struct {
+	Data []NacosTarget
 }
 
 func init() {
-	flag.StringVar(&nacosurl, "url", "http://nacos:8848", "nacos地址")
-	flag.StringVar(&prometheusfile, "write", "/data/work/prometheus/discovery/nacos.json", "prometheus 自动发现文件路径")
+	flag.StringVar(&nacosurl, "url", "http://dev-k8s-nacos:8848", "nacos地址")
+	flag.StringVar(&writefile, "write", "", "prometheus 自动发现文件路径")
 	flag.StringVar(&ipfile, "ipfile", "salt_ip.json", "ip解析文件")
 	flag.StringVar(&findstr, "find", "", "查找服务")
-	flag.BoolVar(&noconsole, "noconsole", false, "输出console")
+	flag.BoolVar(&noconsole, "noconsole", false, "不输出console")
+	flag.BoolVar(&cluster_status, "cluster", false, "查看集群状态")
+	flag.BoolVar(&version, "version", false, "查看版本")
+	flag.BoolVar(&watch, "watch", false, "监控服务")
+	flag.DurationVar(&second, "second", 2*time.Second, "监控服务间隔刷新时间")
 }
 
-func Filepathcheck(path string) bool {
-	if _, err := os.Stat(path); err != nil {
+func FilePathCheck() bool {
+	if _, err := os.Stat(ipfile); err != nil {
 		if !os.IsExist(err) {
+			fmt.Println("IP解析文件找不到...", ipfile)
+			os.Exit(exitcode)
 			ipparse = false
 			return false
 		}
 	}
 	ipparse = true
-	fmt.Println("IP解析文件:", ipfile)
 	return true
 }
 
-// Saltipparse ip解析
-func Saltipparse() {
+func IP_Parse() {
+	FilePathCheck()
 	file, err := os.OpenFile(ipfile, os.O_RDONLY, 0644)
 	if err != nil {
 		fmt.Println("打开文件错误")
-		os.Exit(2)
+		os.Exit(exitcode)
 	}
 	defer file.Close()
 	fileb, _ := ioutil.ReadAll(file)
 	if err := json.Unmarshal(fileb, &ipdata); err != nil {
-		fmt.Println("ip文件解析错误")
-		os.Exit(2)
+		fmt.Println("ip文件解析错误,请确认json格式")
+		os.Exit(exitcode)
 	}
 }
 
-func Gethostname(ip string) string {
+func GetHostName(ip string) string {
 	for hostname, i := range ipdata {
 		if ip == i {
 			return hostname
@@ -135,50 +163,56 @@ func Gethostname(ip string) string {
 	return "None"
 }
 
-func (d *nacos) WriteFile() {
-	var basedir string
-	var filename string
-	basedir = path.Dir(prometheusfile)
-	filename = path.Base(prometheusfile)
-	fmt.Println(filename)
-	os.MkdirAll(basedir, os.ModePerm)
-	file, err := os.OpenFile(basedir+"/nacos_tmp.json", os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Printf("创建文件失败 %s", err)
-		os.Exit(2)
+func (d *Nacos) WriteFile() {
+	nacos_server := d.clusterdata[d.Host]
+	if len(nacos_server.HealthInstance) != 0 {
+		var basedir string
+		var filename string
+		basedir = path.Dir(writefile)
+		filename = path.Base(writefile)
+		if err := os.MkdirAll(basedir, os.ModePerm); err != nil {
+			os.Exit(exitcode)
+		}
+
+		file, err := os.OpenFile(basedir+"/.nacos_tmp.json", os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Printf("创建文件失败 %s", err)
+			os.Exit(2)
+		}
+		defer file.Close()
+		var nacos NacosFile
+		for _, na := range nacos_server.HealthInstance {
+			var ta NacosTarget
+			ta.Labels = make(map[string]string)
+			ta.Targets = append(ta.Targets, na[2])
+			ta.Labels["namespace"] = na[0]
+			ta.Labels["service"] = na[1]
+			ta.Labels["hostname"] = na[4]
+			ta.Labels["weight"] = na[5]
+			ta.Labels["pid"] = na[6]
+			nacos.Data = append(nacos.Data, ta)
+		}
+		data, err := json.MarshalIndent(&nacos.Data, "", "  ")
+		if err != nil {
+			fmt.Println("json序列化失败!")
+			os.Exit(exitcode)
+		}
+		if _, err := file.Write(data); err != nil {
+			fmt.Println("写入失败", err)
+			os.Exit(exitcode)
+		}
+		file.Close()
+		os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename)
+		fmt.Println("写入成功:", basedir+"/"+filename)
 	}
-	defer file.Close()
-	var nacos nacosfile
-	for _, na := range d.AllInstance {
-		var ta nacostarget
-		ta.Labels = make(map[string]string)
-		ta.Targets = append(ta.Targets, na[2])
-		ta.Labels["namespace"] = na[0]
-		ta.Labels["service"] = na[1]
-		ta.Labels["hostname"] = na[4]
-		ta.Labels["weight"] = na[5]
-		ta.Labels["pid"] = na[6]
-		nacos.Data = append(nacos.Data, ta)
-	}
-	data, err := json.MarshalIndent(&nacos.Data, "", "  ")
-	if err != nil {
-		fmt.Println("json序列化失败!")
-		os.Exit(2)
-	}
-	if _, err := file.Write(data); err != nil {
-		fmt.Println("写入失败", err)
-	}
-	file.Close()
-	os.Rename(basedir+"/nacos_tmp.json", basedir+"/nacos.json")
-	fmt.Println("写入成功:", basedir+"/nacos.json")
 }
 
-func (d *nacos) HttpReq(url string, stu interface{}) []byte {
+func (d *Nacos) HttpReq(url string) []byte {
 	req, _ := http.NewRequest("GET", url, nil)
 	res, err := d.Client.Do(req)
 	if err != nil {
 		fmt.Println("请求异常:", err)
-		os.Exit(2)
+		os.Exit(exitcode)
 	}
 	defer res.Body.Close()
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -186,137 +220,210 @@ func (d *nacos) HttpReq(url string, stu interface{}) []byte {
 
 }
 
-func (d *nacos) GetCluster() {
-	url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", nacosurl)
-	res := d.HttpReq(url, namespaces{})
+func (d *Nacos) GetCluster() {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", nacosurl)
+	res := d.HttpReq(_url)
 	d.Cluster = string(res)
 }
 
-func (d *nacos) GetNamespace() {
-	url := fmt.Sprintf("%s/nacos/v1/console/namespaces", nacosurl)
-	res := d.HttpReq(url, namespaces{})
+func (d *Nacos) GetNameSpace() {
+	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", nacosurl)
+	res := d.HttpReq(_url)
 	err := json.Unmarshal(res, &d.Namespaces)
 	if err != nil {
 		fmt.Println("获取命名空间json异常")
 		os.Exit(2)
 	}
 }
-func (d *nacos) GetService(namespaceId string) []byte {
-	url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", nacosurl, namespaceId)
-	res := d.HttpReq(url, service{})
+func (d *Nacos) GetService(namespaceId string) []byte {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", nacosurl, namespaceId)
+	res := d.HttpReq(_url)
 	return res
 }
-func (d *nacos) GetInstance(servicename string, namespaceId string) []byte {
-	url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", nacosurl, servicename, namespaceId)
-	res := d.HttpReq(url, service{})
+
+func (d *Nacos) GetInstance(servicename string, namespaceId string) []byte {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", nacosurl, servicename, namespaceId)
+	res := d.HttpReq(_url)
 	return res
 }
-func main() {
-	flag.Parse()
-	Filepathcheck(ipfile)
-	if ipparse {
-		Saltipparse()
-	}
-	fmt.Println("Nacos:", nacosurl)
+
+func (d *Nacos) PrintInfo() {
+	nacos_server := d.clusterdata[d.Host]
 	tabletitle := []string{"命名空间", "服务名称", "实例", "健康状态", "主机名", "权重", "PID"}
-	na := new(nacos)
-	na.Client.Timeout = time.Second * 10
-	na.GetNamespace()
-	for _, namespace := range na.Namespaces.Data {
-		res := na.GetService(namespace.Namespace)
-		var ser service
-		json.Unmarshal(res, &ser)
-		for _, se := range ser.Doms {
-			res := na.GetInstance(se, namespace.Namespace)
-			var in Instance
-			err := json.Unmarshal(res, &in)
-			if err != nil {
-				fmt.Println("json序列化错误:%s", err)
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(tabletitle)
+	for _, v := range nacos_server.HealthInstance {
+		if findstr == "" {
+			table.Append(v)
+		} else {
+			if strings.Contains(v[0], findstr) {
+				table.Append(v)
 			}
-			for _, host := range in.Hosts {
-				metadataUrl := host.Metadata["dubbo.metadata-service.urls"]
-				u, _ := regexp.Compile("pid=(.+?)&")
-				_tmpmap := make([]string, 0)
-				ipinfo := fmt.Sprintf("%s:%d", host.Ip, host.Port)
-				_tmpmap = append(_tmpmap, namespace.NamespaceShowName)
-				_tmpmap = append(_tmpmap, se)
-				_tmpmap = append(_tmpmap, ipinfo)
-				_tmpmap = append(_tmpmap, strconv.FormatBool(host.Healthy))
-				if ipparse {
-					_tmpmap = append(_tmpmap, Gethostname(host.Ip))
-				} else {
-					_tmpmap = append(_tmpmap, "None")
-				}
-				_tmpmap = append(_tmpmap, fmt.Sprintf("%.0f", host.Weight))
-				pid := u.FindStringSubmatch(metadataUrl)
-				if len(pid) == 2 {
-					_tmpmap = append(_tmpmap, pid[1])
-				} else {
-					_tmpmap = append(_tmpmap, "")
-				}
-				if host.Healthy {
-					if findstr == "" {
-						na.Healthydata = append(na.Healthydata, _tmpmap)
-					} else {
-						if strings.Contains(se, findstr) {
-							na.Healthydata = append(na.Healthydata, _tmpmap)
-						}
-					}
-				} else {
-					if findstr == "" {
-						na.Healthydataerr = append(na.Healthydataerr, _tmpmap)
-					} else {
-						if strings.Contains(se, findstr) {
-							na.Healthydataerr = append(na.Healthydataerr, _tmpmap)
-						}
-					}
-				}
-				na.AllInstance = append(na.AllInstance, _tmpmap)
+			if strings.Contains(v[1], findstr) {
+				table.Append(v)
+			}
+			if strings.Contains(v[2], findstr) {
+				table.Append(v)
 			}
 		}
 	}
-	if !noconsole {
-		// 正常实例
-		fmt.Printf("健康实例:(%d 个)\n", len(na.Healthydata))
+	fmt.Printf("健康实例:(%d 个)\n", table.NumLines())
+	table.Render()
+	if len(nacos_server.UnHealthInstance) != 0 {
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader(tabletitle)
-		for _, v := range na.Healthydata {
-			table.Append(v)
-		}
-		table.Render()
-		// 异常实例
-		if len(na.Healthydataerr) != 0 {
-			fmt.Printf("异常实例:(%d 个)\n", len(na.Healthydataerr))
-			tableerr := tablewriter.NewWriter(os.Stdout)
-			tableerr.SetHeader(tabletitle)
-			for _, v := range na.Healthydataerr {
-				tableerr.Append(v)
+		for _, v := range d.Healthydataerr {
+			if strings.Contains(v[0], findstr) {
+				table.Append(v)
 			}
-			tableerr.Render()
+			if strings.Contains(v[1], findstr) {
+				table.Append(v)
+			}
+			if strings.Contains(v[2], findstr) {
+				table.Append(v)
+			}
 		}
-		// 集群状态
-		na.GetCluster()
+		fmt.Printf("异常实例:(%d 个)\n", table.NumLines())
+		table.Render()
+	}
+}
+func (d *Nacos) GetNacosInstance() {
+	d.GetCluster()
+	d.clusterdata = make(map[string]ClusterStatus)
+	results := gjson.GetMany(d.Cluster, "servers.#.ip", "servers.#.port", "servers.#.state", "servers.#.extendInfo.version", "servers.#.extendInfo.lastRefreshTime")
+	cluster_list := []string{}
+	for key := range results[0].Array() {
+		timeStampStr := results[4].Array()[key].String()
+		timeStamp, _ := strconv.Atoi(timeStampStr)
+		formatTimeStr := time.Unix(int64(timeStamp/1000), 0).Format("2006-01-02 15:04:05")
+		var cluster ClusterStatus
+		cluster.Ip = results[0].Array()[key].String()
+		cluster.Port = results[1].Array()[key].String()
+		cluster.state = results[2].Array()[key].String()
+		cluster.Version = results[3].Array()[key].String()
+		cluster.LastRefreshTime = formatTimeStr
+		key := fmt.Sprintf("%s:%s", results[0].Array()[key].String(), results[1].Array()[key].String())
+		d.clusterdata[key] = cluster
+		cluster_list = append(cluster_list, key)
+	}
+	if !cluster_status {
+		for _, server := range cluster_list {
+			url := fmt.Sprintf("%s://%s", d.Scheme, server)
+			if url == d.DefaultUlr {
+				cluster_list = []string{server}
+			}
+		}
+	}
+	if !cluster_status && len(cluster_list) != 1 {
+		url := fmt.Sprintf("%s", d.Host)
+		cluster_list = []string{url}
+	}
+	for _, server := range cluster_list {
+		nacosurl = fmt.Sprintf("%s://%s", d.Scheme, server)
+		d.GetNameSpace()
+		for _, namespace := range d.Namespaces.Data {
+			res := d.GetService(namespace.Namespace)
+			var ser service
+			var cluster ClusterStatus
+			cluster = d.clusterdata[server]
+			json.Unmarshal(res, &ser)
+			for _, se := range ser.Doms {
+				res := d.GetInstance(se, namespace.Namespace)
+				var in Instance
+				err := json.Unmarshal(res, &in)
+				if err != nil {
+					fmt.Println("json序列化错误:%s", err)
+				}
+				for _, host := range in.Hosts {
+					metadataUrl := host.Metadata["dubbo.metadata-service.urls"]
+					u, _ := regexp.Compile("pid=(.+?)&")
+					_tmpmap := make([]string, 0)
+					ipinfo := fmt.Sprintf("%s:%d", host.Ip, host.Port)
+					_tmpmap = append(_tmpmap, namespace.NamespaceShowName)
+					_tmpmap = append(_tmpmap, se)
+					_tmpmap = append(_tmpmap, ipinfo)
+					_tmpmap = append(_tmpmap, strconv.FormatBool(host.Healthy))
+					if ipparse {
+						_tmpmap = append(_tmpmap, GetHostName(host.Ip))
+					} else {
+						_tmpmap = append(_tmpmap, "None")
+					}
+					_tmpmap = append(_tmpmap, fmt.Sprintf("%.0f", host.Weight))
+					pid := u.FindStringSubmatch(metadataUrl)
+					if len(pid) == 2 {
+						_tmpmap = append(_tmpmap, pid[1])
+					} else {
+						_tmpmap = append(_tmpmap, "")
+					}
+					if host.Healthy {
+						cluster.HealthInstance = append(cluster.HealthInstance, _tmpmap)
+					} else {
+						cluster.UnHealthInstance = append(cluster.UnHealthInstance, _tmpmap)
+					}
+					d.clusterdata[server] = cluster
+				}
+			}
+		}
+	}
+	//fmt.Println(d.clusterdata)
+}
+func ParseCheck() {
+	flag.Parse()
+	if ipparse {
+		IP_Parse()
+	}
+}
+
+func main() {
+	flag.Parse()
+	ParseCheck()
+	u, err := url.Parse(nacosurl)
+	if err != nil {
+		fmt.Println("url解析错误!")
+		os.Exit(exitcode)
+	}
+	na := new(Nacos)
+	na.Client.Timeout = time.Second * 10
+	na.DefaultUlr = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+	na.Host = u.Host
+	na.Scheme = u.Scheme
+	na.GetNacosInstance()
+	if version {
+		fmt.Println("版本:0.2")
+		os.Exit(0)
+	}
+	if !noconsole && !cluster_status {
+		fmt.Println("Nacos:", nacosurl)
+		if watch {
+			for {
+				na.GetNacosInstance()
+				na.PrintInfo()
+				time.Sleep(second)
+			}
+		}
+		na.PrintInfo()
+	}
+	if cluster_status {
 		tablecluser := tablewriter.NewWriter(os.Stdout)
-		tablecluser.SetHeader([]string{"节点", "端口", "状态", "版本", "刷新时间"})
-		results := gjson.GetMany(na.Cluster, "servers.#.ip", "servers.#.port", "servers.#.state", "servers.#.extendInfo.version", "servers.#.extendInfo.lastRefreshTime")
-		for key, _ := range results[0].Array() {
-			timeStampStr := results[4].Array()[key].String()
-			timeStamp, _ := strconv.Atoi(timeStampStr)
-			formatTimeStr := time.Unix(int64(timeStamp/1000), 0).Format("2006-01-02 15:04:05")
+		tablecluser.SetHeader([]string{"节点", "端口", "状态", "版本", "刷新时间", "健康实例", "异常实例"})
+		for _, key := range na.clusterdata {
 			tablecluser.Append([]string{
-				results[0].Array()[key].String(),
-				results[1].Array()[key].String(),
-				results[2].Array()[key].String(),
-				results[3].Array()[key].String(),
-				formatTimeStr,
+				key.Ip,
+				key.Port,
+				key.state,
+				key.Version,
+				key.LastRefreshTime,
+				strconv.Itoa(len(key.HealthInstance)),
+				strconv.Itoa(len(key.UnHealthInstance)),
 			})
 		}
 		leader := gjson.Get(na.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
 		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), leader)
 		tablecluser.Render()
-
 	}
 	na.Client.CloseIdleConnections()
-	na.WriteFile()
+	if writefile != "" {
+		na.WriteFile()
+	}
 
 }
