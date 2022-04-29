@@ -389,7 +389,7 @@ func main() {
 	na.Scheme = u.Scheme
 	na.GetNacosInstance()
 	if version {
-		fmt.Println("版本:0.2")
+		fmt.Println("版本:0.3")
 		os.Exit(0)
 	}
 	if !noconsole && !cluster_status {
