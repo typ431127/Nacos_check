@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"go/types"
+	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -32,6 +33,8 @@ var (
 	version        bool              // 版本
 	watch          bool              // 监控
 	second         time.Duration     // 监控服务间隔
+	v2upgrade      bool              // 2.0版本升级详情
+	_json          bool              // 导出json
 )
 
 type Nacos struct {
@@ -55,8 +58,19 @@ type ClusterStatus struct {
 	LastRefreshTime  string
 	HealthInstance   [][]string
 	UnHealthInstance [][]string
+	V2Upgrade        V2Upgrade
 }
 
+type V2Upgrade struct {
+	Upgraded             bool
+	IsAll20XVersion      bool
+	IsDoubleWriteEnabled bool
+	ServiceCountV1       int64
+	InstanceCountV1      int64
+	ServiceCountV2       int64
+	InstanceCountV2      int64
+	SubscribeCountV2     int64
+}
 type NamespaceServer struct {
 	Namespace         string `json:"namespace"`
 	NamespaceShowName string `json:"namespaceShowName"`
@@ -120,7 +134,9 @@ func init() {
 	flag.StringVar(&ipfile, "ipfile", "salt_ip.json", "ip解析文件")
 	flag.StringVar(&findstr, "find", "", "查找服务")
 	flag.BoolVar(&noconsole, "noconsole", false, "不输出console")
+	flag.BoolVar(&_json, "json", false, "输出json")
 	flag.BoolVar(&cluster_status, "cluster", false, "查看集群状态")
+	flag.BoolVar(&v2upgrade, "v2upgrade", false, "查看2.0升级状态,和-cluster一起使用")
 	flag.BoolVar(&version, "version", false, "查看版本")
 	flag.BoolVar(&watch, "watch", false, "监控服务")
 	flag.DurationVar(&second, "second", 2*time.Second, "监控服务间隔刷新时间")
@@ -163,23 +179,9 @@ func GetHostName(ip string) string {
 	return "None"
 }
 
-func (d *Nacos) WriteFile() {
+func (d *Nacos) GetJson() []byte {
 	nacos_server := d.clusterdata[d.Host]
 	if len(nacos_server.HealthInstance) != 0 {
-		var basedir string
-		var filename string
-		basedir = path.Dir(writefile)
-		filename = path.Base(writefile)
-		if err := os.MkdirAll(basedir, os.ModePerm); err != nil {
-			os.Exit(exitcode)
-		}
-
-		file, err := os.OpenFile(basedir+"/.nacos_tmp.json", os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fmt.Printf("创建文件失败 %s", err)
-			os.Exit(2)
-		}
-		defer file.Close()
 		var nacos NacosFile
 		for _, na := range nacos_server.HealthInstance {
 			var ta NacosTarget
@@ -197,14 +199,32 @@ func (d *Nacos) WriteFile() {
 			fmt.Println("json序列化失败!")
 			os.Exit(exitcode)
 		}
-		if _, err := file.Write(data); err != nil {
-			fmt.Println("写入失败", err)
-			os.Exit(exitcode)
-		}
-		file.Close()
-		os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename)
-		fmt.Println("写入成功:", basedir+"/"+filename)
+		return data
 	}
+	return []byte("[]")
+}
+func (d *Nacos) WriteFile() {
+	var basedir string
+	var filename string
+	basedir = path.Dir(writefile)
+	filename = path.Base(writefile)
+	if err := os.MkdirAll(basedir, os.ModePerm); err != nil {
+		os.Exit(exitcode)
+	}
+	file, err := os.OpenFile(basedir+"/.nacos_tmp.json", os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("创建文件失败 %s", err)
+		os.Exit(2)
+	}
+	defer file.Close()
+	data := d.GetJson()
+	if _, err := file.Write(data); err != nil {
+		fmt.Println("写入失败", err)
+		os.Exit(exitcode)
+	}
+	file.Close()
+	os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename)
+	fmt.Println("写入成功:", basedir+"/"+filename)
 }
 
 func (d *Nacos) HttpReq(url string) []byte {
@@ -243,6 +263,12 @@ func (d *Nacos) GetService(namespaceId string) []byte {
 
 func (d *Nacos) GetInstance(servicename string, namespaceId string) []byte {
 	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", nacosurl, servicename, namespaceId)
+	res := d.HttpReq(_url)
+	return res
+}
+
+func (d *Nacos) GetV2Upgrade() []byte {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", nacosurl)
 	res := d.HttpReq(_url)
 	return res
 }
@@ -326,6 +352,31 @@ func (d *Nacos) GetNacosInstance() {
 			var ser service
 			var cluster ClusterStatus
 			cluster = d.clusterdata[server]
+			if v2upgrade {
+				v2 := d.GetV2Upgrade()
+				rep, _ := regexp.Compile(".*##.*")
+				v2 = rep.ReplaceAll(v2, []byte(""))
+				cfg, err := ini.Load(v2)
+				if err != nil {
+					fmt.Println("v2解析错误")
+				}
+				IsDoubleWriteEnabled, _ := cfg.Section("").Key("isDoubleWriteEnabled").Bool()
+				Upgraded, _ := cfg.Section("").Key("upgraded").Bool()
+				IsAll20XVersion, _ := cfg.Section("").Key("isAll20XVersion").Bool()
+				ServiceCountV1, _ := cfg.Section("").Key("serviceCountV1").Int64()
+				InstanceCountV1, _ := cfg.Section("").Key("instanceCountV1").Int64()
+				ServiceCountV2, _ := cfg.Section("").Key("serviceCountV2").Int64()
+				InstanceCountV2, _ := cfg.Section("").Key("instanceCountV2").Int64()
+				SubscribeCountV2, _ := cfg.Section("").Key("subscribeCountV2").Int64()
+				cluster.V2Upgrade.IsDoubleWriteEnabled = IsDoubleWriteEnabled
+				cluster.V2Upgrade.Upgraded = Upgraded
+				cluster.V2Upgrade.IsAll20XVersion = IsAll20XVersion
+				cluster.V2Upgrade.ServiceCountV1 = ServiceCountV1
+				cluster.V2Upgrade.InstanceCountV1 = InstanceCountV1
+				cluster.V2Upgrade.ServiceCountV2 = ServiceCountV2
+				cluster.V2Upgrade.InstanceCountV2 = InstanceCountV2
+				cluster.V2Upgrade.SubscribeCountV2 = SubscribeCountV2
+			}
 			json.Unmarshal(res, &ser)
 			for _, se := range ser.Doms {
 				res := d.GetInstance(se, namespace.Namespace)
@@ -383,13 +434,18 @@ func main() {
 		os.Exit(exitcode)
 	}
 	na := new(Nacos)
-	na.Client.Timeout = time.Second * 10
+	na.Client.Timeout = time.Second * 15
 	na.DefaultUlr = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 	na.Host = u.Host
 	na.Scheme = u.Scheme
 	na.GetNacosInstance()
+	if _json {
+		data := na.GetJson()
+		fmt.Println(string(data))
+		os.Exit(0)
+	}
 	if version {
-		fmt.Println("版本:0.3")
+		fmt.Println("版本:0.4")
 		os.Exit(0)
 	}
 	if !noconsole && !cluster_status {
@@ -419,6 +475,24 @@ func main() {
 		}
 		leader := gjson.Get(na.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
 		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), leader)
+		tablecluser.Render()
+	}
+	if v2upgrade && cluster_status {
+		tablecluser := tablewriter.NewWriter(os.Stdout)
+		tablecluser.SetHeader([]string{"节点", "双写", "v2服务", "v2实例", "v1服务", "v1实例", "upgraded", "全部V2"})
+		for _, key := range na.clusterdata {
+			tablecluser.Append([]string{
+				key.Ip,
+				strconv.FormatBool(key.V2Upgrade.IsDoubleWriteEnabled),
+				strconv.FormatInt(key.V2Upgrade.ServiceCountV2, 10),
+				strconv.FormatInt(key.V2Upgrade.InstanceCountV2, 10),
+				strconv.FormatInt(key.V2Upgrade.ServiceCountV1, 10),
+				strconv.FormatInt(key.V2Upgrade.InstanceCountV1, 10),
+				strconv.FormatBool(key.V2Upgrade.Upgraded),
+				strconv.FormatBool(key.V2Upgrade.IsAll20XVersion),
+			})
+		}
+		fmt.Printf("v2版本升级接口详情\n")
 		tablecluser.Render()
 	}
 	na.Client.CloseIdleConnections()
