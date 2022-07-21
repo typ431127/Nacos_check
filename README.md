@@ -1,7 +1,7 @@
 # Nacos 运维检查工具
 
 方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
-golang 运维萌新，学习项目... 大佬勿喷😊
+golang 运维萌新，学习项目... 😊
 
 ### 使用
 
@@ -37,7 +37,18 @@ golang 运维萌新，学习项目... 大佬勿喷😊
 
 ![image](https://ddn-md.oss-cn-beijing.aliyuncs.com/images/md/2022/06/10/20220610104930.png)
 
+### 安装
+```shell
+curl -L https://github.com/typ431127/Nacos_check/releases/download/0.4.1/nacos_check-linux-amd64 -o nacos_check
+chmod +x nacos_check
+./nacos_check --url https://nacos地址
+```
+
 ### 基本使用
+##### 运维命令
+```shell
+./nacos_check --url https://nacos地址
+```
 
 #####  Prometheus自动发现
 
@@ -68,6 +79,7 @@ file_sd_configs:
       - '/data/work/prometheus/discovery/*.json'
       refresh_interval: 3m
 ```
+
 #### find 快速查找服务，支持以下👇匹配
 - 匹配命名空间
 - 匹配服务名
