@@ -56,7 +56,11 @@ func IP_Parse() {
 	}
 }
 
-func FileParseCheck() {
+func FlagCheck() {
+	if nacos.Version {
+		fmt.Println("版本:0.4.2")
+		os.Exit(0)
+	}
 	FilePathCheck()
 	nacos.ContainerdInit()
 	if nacos.Ipparse {
@@ -66,7 +70,7 @@ func FileParseCheck() {
 
 func NacosInit() {
 	flag.Parse()
-	FileParseCheck()
+	FlagCheck()
 	u, err := url.Parse(nacos.Nacosurl)
 	if err != nil {
 		fmt.Println("url解析错误!")
@@ -81,10 +85,6 @@ func NacosInit() {
 }
 
 func NacosRun() {
-	if nacos.Version {
-		fmt.Println("版本:0.4.2")
-		os.Exit(0)
-	}
 	if nacos.Web {
 		web.Runwebserver()
 	}
