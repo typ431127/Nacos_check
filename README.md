@@ -6,6 +6,7 @@ golang 运维萌新，学习项目... 😊
 ### 使用
 
 ```shell
+Usage of nacos_check.exe:
   -cluster
         查看集群状态
   -find string
@@ -16,6 +17,8 @@ golang 运维萌新，学习项目... 😊
         输出json
   -noconsole
         不输出console
+  -port string
+        web 端口 (default ":8099")
   -second duration
         监控服务间隔刷新时间 (default 2s)
   -url string
@@ -26,6 +29,8 @@ golang 运维萌新，学习项目... 😊
         查看版本
   -watch
         监控服务
+  -web
+        开启Web api Prometheus http_sd_configs
   -write string
         prometheus 自动发现文件路径
 ```
@@ -82,11 +87,11 @@ file_sd_configs:
 
 #### Prometheus自动发现
 ```json
-# 文件级别自动发现
+文件级别自动发现
 ./nacos_check-linux-amd64 -url http://nacos-0.xxxxx:8848 -noconsole -write nacos.json
 
-# http_sd_configs 自动发现
-# 开启webapi        
+http_sd_configs 自动发现
+开启webapi        
 ./nacos_check-linux-amd64 -url http://nacos-0.xxxx:8848 -web
 ```
 **基于http_sd_configs的自动发现**
