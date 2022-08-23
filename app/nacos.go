@@ -81,6 +81,10 @@ func NacosInit() {
 }
 
 func NacosRun() {
+	if nacos.Version {
+		fmt.Println("版本:0.4.2")
+		os.Exit(0)
+	}
 	if nacos.Web {
 		web.Runwebserver()
 	}
@@ -92,10 +96,6 @@ func NacosRun() {
 			fmt.Println("转换失败")
 		}
 		fmt.Println(string(data))
-		os.Exit(0)
-	}
-	if nacos.Version {
-		fmt.Println("版本:0.4.2")
 		os.Exit(0)
 	}
 	if !nacos.Noconsole && !nacos.Cluster_status {
