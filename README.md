@@ -80,6 +80,34 @@ file_sd_configs:
       refresh_interval: 3m
 ```
 
+#### Prometheus自动发现
+```json
+# 文件级别自动发现
+./nacos_check-linux-amd64 -url http://nacos-0.xxxxx:8848 -noconsole -write nacos.json
+
+# http_sd_configs 自动发现
+# 开启webapi        
+./nacos_check-linux-amd64 -url http://nacos-0.xxxx:8848 -web
+```
+**基于http_sd_configs的自动发现**
+```yml
+scrape_configs:
+  - job_name: 'nacos'
+    scrape_interval: 10s
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    http_sd_configs:
+     - url: http://localhost:8099
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+```
+
 #### find 快速查找服务，支持以下👇匹配
 - 匹配命名空间
 - 匹配服务名

@@ -1,7 +1,8 @@
 package main
 
-import "nacos_check/ext"
+import "nacos_check/app"
 
 func main() {
-	ext.NacosInit()
+	app.NacosInit()
+	app.NacosRun()
 }
