@@ -52,7 +52,8 @@ func IP_Parse() {
 	fileb, _ := ioutil.ReadAll(file)
 	if err := json.Unmarshal(fileb, &nacos.Ipdata); err != nil {
 		fmt.Println("ip文件解析错误,请确认json格式")
-		os.Exit(nacos.Exitcode)
+		nacos.Ipparse = false
+		//os.Exit(nacos.Exitcode)
 	}
 }
 
