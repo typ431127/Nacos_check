@@ -13,10 +13,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
+var mutex sync.Mutex
+
 func (d *Nacos) GetJson(result_type string) interface{} {
+	mutex.Lock()
+	defer mutex.Unlock()
 	d.GetNacosInstance()
 	nacos_server := d.Clusterdata[d.Host]
 	if len(nacos_server.HealthInstance) != 0 {
