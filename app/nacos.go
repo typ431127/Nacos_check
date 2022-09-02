@@ -70,6 +70,13 @@ func FlagCheck() {
 }
 
 func NacosInit() {
+	defer func() {
+		if func_err := recover(); func_err != nil {
+			fmt.Println("程序初始化错误.....")
+			fmt.Println(func_err)
+			os.Exit(2)
+		}
+	}()
 	flag.Parse()
 	FlagCheck()
 	u, err := url.Parse(nacos.Nacosurl)
@@ -90,11 +97,16 @@ func NacosRun() {
 		web.Runwebserver()
 	}
 	if nacos.Export_json {
-		jsondata := nacos.Na.GetJson("byte")
+		jsondata, err := nacos.Na.GetJson("byte")
+		if err != nil {
+			fmt.Println("获取json发生错误")
+			os.Exit(2)
+		}
 		data := make([]byte, 0)
 		var check bool
 		if data, check = jsondata.([]byte); !check {
 			fmt.Println("转换失败")
+			os.Exit(2)
 		}
 		fmt.Println(string(data))
 		os.Exit(0)

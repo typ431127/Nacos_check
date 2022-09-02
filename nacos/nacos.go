@@ -2,6 +2,7 @@ package nacos
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/tidwall/gjson"
@@ -19,9 +20,15 @@ import (
 
 var mutex sync.Mutex
 
-func (d *Nacos) GetJson(result_type string) interface{} {
+func (d *Nacos) GetJson(result_type string) (result interface{}, err error) {
 	mutex.Lock()
 	defer mutex.Unlock()
+	defer func() {
+		if func_err := recover(); func_err != nil {
+			result = []byte("[]")
+			err = errors.New("error")
+		}
+	}()
 	d.GetNacosInstance()
 	nacos_server := d.Clusterdata[d.Host]
 	if len(nacos_server.HealthInstance) != 0 {
@@ -41,16 +48,20 @@ func (d *Nacos) GetJson(result_type string) interface{} {
 			nacos.Data = append(nacos.Data, ta)
 		}
 		if result_type == "json" {
-			return nacos.Data
+			result = nacos.Data
+			return result, err
 		}
 		data, err := json.MarshalIndent(&nacos.Data, "", "  ")
 		if err != nil {
 			fmt.Println("json序列化失败!")
-			os.Exit(Exitcode)
+			result = []byte("[]")
+			return result, err
 		}
-		return data
+		result = data
+		return result, err
 	}
-	return []byte("[]")
+	result = []byte("[]")
+	return result, err
 }
 func (d *Nacos) WriteFile() {
 	var basedir string
@@ -66,7 +77,7 @@ func (d *Nacos) WriteFile() {
 		os.Exit(2)
 	}
 	defer file.Close()
-	jsondata := d.GetJson("byte")
+	jsondata, err := d.GetJson("byte")
 	data := make([]byte, 0)
 	var check bool
 	if data, check = jsondata.([]byte); !check {
@@ -85,8 +96,10 @@ func (d *Nacos) HttpReq(url string) []byte {
 	req, _ := http.NewRequest("GET", url, nil)
 	res, err := d.Client.Do(req)
 	if err != nil {
-		fmt.Println("请求异常:", err)
-		os.Exit(Exitcode)
+		panic(err)
+	}
+	if res.StatusCode != 200 {
+		panic(fmt.Sprintf("请求状态码异常:%d", res.StatusCode))
 	}
 	defer res.Body.Close()
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -106,7 +119,6 @@ func (d *Nacos) GetNameSpace() {
 	err := json.Unmarshal(res, &d.Namespaces)
 	if err != nil {
 		fmt.Println("获取命名空间json异常")
-		os.Exit(2)
 	}
 }
 func (d *Nacos) GetService(namespaceId string) []byte {
