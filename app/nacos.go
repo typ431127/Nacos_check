@@ -59,7 +59,7 @@ func IP_Parse() {
 
 func FlagCheck() {
 	if nacos.Version {
-		fmt.Println("版本:0.4.2")
+		fmt.Println("版本:0.4.3")
 		os.Exit(0)
 	}
 	FilePathCheck()
