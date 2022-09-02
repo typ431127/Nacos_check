@@ -44,7 +44,7 @@ Usage of nacos_check.exe:
 
 ### 安装
 ```shell
-curl -L https://github.com/typ431127/Nacos_check/releases/download/0.4.1/nacos_check-linux-amd64 -o nacos_check
+curl -L https://github.com/typ431127/Nacos_check/releases/download/0.4.3/nacos_check-linux-amd64 -o nacos_check
 chmod +x nacos_check
 ./nacos_check --url https://nacos地址
 ```
