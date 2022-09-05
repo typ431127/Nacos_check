@@ -1,4 +1,4 @@
-# Nacos 运维检查工具
+# Nacos 运维便携命令行检查工具
 
 方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
 golang 运维萌新，学习项目... 😊
@@ -36,11 +36,12 @@ Usage of nacos_check.exe:
 ```
 
 #### 显示所有实例注册信息
-![image](https://ddn-md.oss-cn-beijing.aliyuncs.com/images/md/2022/06/10/20220610104702.png)
-
+![image](images/1.png)
 #### 集群和升级状态
-
-![image](https://ddn-md.oss-cn-beijing.aliyuncs.com/images/md/2022/06/10/20220610104930.png)
+```shell
+nacos_check -url http://nacos.xxx.com:8848 -cluster -v2upgrade
+```
+![image](images/4.png)
 
 ### 安装
 ```shell
@@ -128,7 +129,12 @@ nacos_check -find 8080
 # 模糊匹配IP
 nacos_check -find 172.30.
 ```
+![image](images/3.png)
 
+#### 监控指定服务,每4s刷新一次
+```shell
+nacos_check -url http://nacos-xxx.com:8848 -find wx- -watch -second 4s
+```
 #### docker启动web服务
 ```
 docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.4.3
@@ -146,10 +152,10 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 ```
 
 ### 效果
-![image](https://user-images.githubusercontent.com/20376675/154187473-96ced8e9-2c04-46aa-85b7-f3e44100e68d.png)
+![image](images/1.png)
 
 ### grafana 展示出图
 
 grafana控制台导入`grafana.json` 此模板默认匹配blackbox_exporter
 
-![image](https://user-images.githubusercontent.com/20376675/154186534-35eed3db-70d8-461a-9aa6-df8cdcd7aa6c.png)
+![image](images/grafana.png)
