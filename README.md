@@ -128,6 +128,13 @@ nacos_check -find 8080
 # 模糊匹配IP
 nacos_check -find 172.30.
 ```
+
+#### docker启动web服务
+```
+docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.4.3
+访问 http://localhost:8099
+```
+
 #### 主机名解析
 因为默认只获取到主机ip，获取不到主机名,可以指定ipfile解析主机名，有条件可以二次开发对接自己cmdb, 文件格式如下 (可选)
 
