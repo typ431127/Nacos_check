@@ -139,7 +139,7 @@ func (d *Nacos) GetV2Upgrade() []byte {
 	return res
 }
 
-func (d *Nacos) PrintInfo() {
+func (d *Nacos) TableRender() {
 	nacos_server := d.Clusterdata[d.Host]
 	tabletitle := []string{"命名空间", "服务名称", "实例", "健康状态", "主机名", "权重", "PID", "容器"}
 	table := tablewriter.NewWriter(os.Stdout)

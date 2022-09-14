@@ -1,8 +1,9 @@
 package main
 
-import "nacos_check/app"
+import (
+	"nacos_check/cmd"
+)
 
 func main() {
-	app.NacosInit()
-	app.NacosRun()
+	cmd.Execute()
 }

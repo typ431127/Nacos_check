@@ -2,34 +2,15 @@ package app
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/tidwall/gjson"
+	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"nacos_check/nacos"
-	"nacos_check/web"
 	"net/url"
 	"os"
-	"strconv"
+	"path/filepath"
 	"time"
 )
-
-func init() {
-	flag.StringVar(&nacos.Nacosurl, "url", "http://dev-k8s-nacos:8848", "nacos地址")
-	flag.StringVar(&nacos.Writefile, "write", "", "prometheus 自动发现文件路径")
-	flag.StringVar(&nacos.Ipfile, "ipfile", "salt_ip.json", "ip解析文件")
-	flag.StringVar(&nacos.Findstr, "find", "", "查找服务")
-	flag.BoolVar(&nacos.Noconsole, "noconsole", false, "不输出console")
-	flag.BoolVar(&nacos.Export_json, "json", false, "输出json")
-	flag.BoolVar(&nacos.Web, "web", false, "开启Web api Prometheus http_sd_configs")
-	flag.StringVar(&nacos.Port, "port", ":8099", "web 端口")
-	flag.BoolVar(&nacos.Cluster_status, "cluster", false, "查看集群状态")
-	flag.BoolVar(&nacos.V2upgrade, "v2upgrade", false, "查看2.0升级状态,和-cluster一起使用")
-	flag.BoolVar(&nacos.Version, "version", false, "查看版本")
-	flag.BoolVar(&nacos.Watch, "watch", false, "监控服务")
-	flag.DurationVar(&nacos.Second, "second", 2*time.Second, "监控服务间隔刷新时间")
-}
 
 func FilePathCheck() {
 	if _, err := os.Stat(nacos.Ipfile); err != nil {
@@ -42,6 +23,28 @@ func FilePathCheck() {
 	}
 }
 
+func NacosConfigCheck() {
+	homedir, err := HomeDir()
+	if err != nil {
+		fmt.Println("获取系统家目录获取异常")
+		homedir = "."
+	}
+	configfile := filepath.Join(homedir, ".nacos_url")
+	if _, err := os.Stat(configfile); err != nil {
+		if !os.IsExist(err) {
+			return
+		}
+	} else {
+		cfg, err := ini.Load(configfile)
+		if err != nil {
+			fmt.Println("读取配置文件发生错误", err)
+			return
+		}
+		if nacos.Nacosurl == "http://dev-k8s-nacos:8848" {
+			nacos.Nacosurl = cfg.Section("").Key("url").String()
+		}
+	}
+}
 func IP_Parse() {
 	file, err := os.OpenFile(nacos.Ipfile, os.O_RDONLY, 0644)
 	if err != nil {
@@ -58,10 +61,6 @@ func IP_Parse() {
 }
 
 func FlagCheck() {
-	if nacos.Version {
-		fmt.Println("版本:0.4.3")
-		os.Exit(0)
-	}
 	FilePathCheck()
 	nacos.ContainerdInit()
 	if nacos.Ipparse {
@@ -77,26 +76,25 @@ func NacosInit() {
 			os.Exit(2)
 		}
 	}()
-	flag.Parse()
 	FlagCheck()
+	NacosConfigCheck()
 	u, err := url.Parse(nacos.Nacosurl)
 	if err != nil {
 		fmt.Println("url解析错误!")
 		os.Exit(nacos.Exitcode)
 	}
-	nacos.Na = nacos.Nacos{}
+	nacos.Na = &nacos.Nacos{}
 	nacos.Na.Client.Timeout = time.Second * 15
 	nacos.Na.DefaultUlr = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 	nacos.Na.Host = u.Host
 	nacos.Na.Scheme = u.Scheme
-	nacos.Na.GetNacosInstance()
+	nacos.Na.GetNameSpace()
 }
 
 func NacosRun() {
-	if nacos.Web {
-		web.Runwebserver()
-	}
-	if nacos.Export_json {
+	nacos.Na.GetNacosInstance()
+	switch {
+	case nacos.ExportJson:
 		jsondata, err := nacos.Na.GetJson("byte")
 		if err != nil {
 			fmt.Println("获取json发生错误")
@@ -110,56 +108,19 @@ func NacosRun() {
 		}
 		fmt.Println(string(data))
 		os.Exit(0)
-	}
-	if !nacos.Noconsole && !nacos.Cluster_status {
+	case nacos.Writefile != "":
+		nacos.Na.WriteFile()
+	default:
 		fmt.Println("Nacos:", nacos.Nacosurl)
 		if nacos.Watch {
+			fmt.Printf("监控模式 刷新时间:%s/次\n", nacos.Second)
 			for {
 				nacos.Na.GetNacosInstance()
-				nacos.Na.PrintInfo()
+				nacos.Na.TableRender()
 				time.Sleep(nacos.Second)
 			}
 		}
-		nacos.Na.PrintInfo()
-	}
-	if nacos.Cluster_status {
-		tablecluser := tablewriter.NewWriter(os.Stdout)
-		tablecluser.SetHeader([]string{"节点", "端口", "状态", "版本", "刷新时间", "健康实例", "异常实例"})
-		for _, key := range nacos.Na.Clusterdata {
-			tablecluser.Append([]string{
-				key.Ip,
-				key.Port,
-				key.State,
-				key.Version,
-				key.LastRefreshTime,
-				strconv.Itoa(len(key.HealthInstance)),
-				strconv.Itoa(len(key.UnHealthInstance)),
-			})
-		}
-		leader := gjson.Get(nacos.Na.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
-		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), leader)
-		tablecluser.Render()
-	}
-	if nacos.V2upgrade && nacos.Cluster_status {
-		tablecluser := tablewriter.NewWriter(os.Stdout)
-		tablecluser.SetHeader([]string{"节点", "双写", "v2服务", "v2实例", "v1服务", "v1实例", "upgraded", "全部V2"})
-		for _, key := range nacos.Na.Clusterdata {
-			tablecluser.Append([]string{
-				key.Ip,
-				strconv.FormatBool(key.V2Upgrade.IsDoubleWriteEnabled),
-				strconv.FormatInt(key.V2Upgrade.ServiceCountV2, 10),
-				strconv.FormatInt(key.V2Upgrade.InstanceCountV2, 10),
-				strconv.FormatInt(key.V2Upgrade.ServiceCountV1, 10),
-				strconv.FormatInt(key.V2Upgrade.InstanceCountV1, 10),
-				strconv.FormatBool(key.V2Upgrade.Upgraded),
-				strconv.FormatBool(key.V2Upgrade.IsAll20XVersion),
-			})
-		}
-		fmt.Printf("v2版本升级接口详情\n")
-		tablecluser.Render()
+		nacos.Na.TableRender()
 	}
 	nacos.Na.Client.CloseIdleConnections()
-	if nacos.Writefile != "" {
-		nacos.Na.WriteFile()
-	}
 }

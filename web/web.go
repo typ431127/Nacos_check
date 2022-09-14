@@ -1,13 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"nacos_check/nacos"
 )
 
 func response(c *gin.Context) {
-	var d *nacos.Nacos
-	d = &nacos.Na
 	if c.Request.RequestURI == "/health" {
 		c.JSON(200, gin.H{"status": true})
 		return
@@ -16,7 +15,7 @@ func response(c *gin.Context) {
 		c.JSON(404, "404")
 		return
 	}
-	result, err := d.GetJson("json")
+	result, err := nacos.Na.GetJson("json")
 	if err != nil {
 		c.JSON(500, []string{})
 		return
@@ -25,6 +24,7 @@ func response(c *gin.Context) {
 }
 
 func Runwebserver() {
+	fmt.Println("Nacos:", nacos.Nacosurl)
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 	v1 := r.Group("/")

@@ -9,7 +9,6 @@ import (
 var (
 	Nacosurl       string            // nacos url地址
 	Findstr        string            // 模糊匹配服务
-	Noconsole      bool              // 是否控制台输出
 	Writefile      string            // prometheus 字段 文件路径
 	Ipfile         string            // ip hostname 解析文件
 	Ipparse        bool              // 是否启用ip解析
@@ -20,10 +19,10 @@ var (
 	Watch          bool              // 监控
 	Second         time.Duration     // 监控服务间隔
 	V2upgrade      bool              // 2.0版本升级详情
-	Export_json    bool              // 导出json
+	ExportJson     bool              // 导出json
 	Web            bool              // 开启webapi
 	Port           string            // web端口
-	Na             Nacos
+	Na             *Nacos
 )
 
 type Nacos struct {
