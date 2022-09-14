@@ -41,6 +41,11 @@ func NacosConfigCheck() {
 			return
 		}
 		if nacos.Nacosurl == "http://dev-k8s-nacos:8848" {
+			Nacosurl := cfg.Section("").Key("url").String()
+			if len(Nacosurl) == 0 {
+				fmt.Println("Nacos配置文件存在问题:", configfile)
+				return
+			}
 			nacos.Nacosurl = cfg.Section("").Key("url").String()
 		}
 	}
