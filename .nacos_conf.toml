@@ -1,0 +1,12 @@
+# 示例配置文件
+# nacos url地址
+url = "http://nacos-0:8848"
+
+# 定义容器网段
+container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
+
+# 设置默认导出json和web服务附加标签
+label = [
+    {name = "env",value = "dev"},
+    {name = "os",value = "linux"}
+]
