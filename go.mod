@@ -3,6 +3,7 @@ module nacos_check
 go 1.16
 
 require (
+	github.com/BurntSushi/toml v1.2.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.5.0

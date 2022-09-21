@@ -74,6 +74,8 @@ Use "nacos_check [command] --help" for more information about a command.
 ##### 控制台输出json
 ```shell
 ./nacos_check-linux-amd64 --url http://nacos-0:8848 --json
+# 添加自定义label
+./nacos_check-linux-amd64 --url http://nacos-0:8848  -l env=dev,pro=test-pro,k8s=true --json
 ```
 
 #####  prometheus 可以结合blackbox_exporter使用
@@ -91,7 +93,10 @@ file_sd_configs:
 
 http_sd_configs 自动发现
 开启webapi        
-./nacos_check-linux-amd64 --url http://nacos-0.xxxx:8848 web
+./nacos_check-linux-amd64 web --url http://nacos-0.xxxx:8848
+
+开启webapi并添加自定义label
+./nacos_check-linux-amd64 web --url http://nacos-0.xxxx:8848 -l env=dev,pro=test-pro,k8s=true
 ```
 **基于http_sd_configs的自动发现**
 ```yml
@@ -134,11 +139,21 @@ scrape_configs:
 查看配置文件路径
 ```shell
  ./nacos_check-linux-amd64 config
-本地配置文件路径: /root/.nacos_url
+本地配置文件路径: /root/.nacos_conf.toml
 ```
-`/root/.nacos_url` 示例
-```ini
-url=http://nacos-0:8848
+`/root/.nacos_conf.toml` 示例
+```toml
+# nacos url地址
+url = "http://nacos-0:8848"
+
+# 定义容器网段
+container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
+
+# 设置默认导出json和web服务附加标签
+label = [
+    {name = "env",value = "dev"},
+    {name = "os",value = "linux"}
+]
 ```
 #### docker启动web服务 Prometheus httpd_sd_config 使用
 ```

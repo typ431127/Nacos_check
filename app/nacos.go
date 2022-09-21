@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/ini.v1"
+	"github.com/BurntSushi/toml"
 	"io/ioutil"
 	"nacos_check/nacos"
 	"net/url"
@@ -12,7 +12,27 @@ import (
 	"time"
 )
 
-func FilePathCheck() {
+type FileConfig struct {
+	Url               string   `toml:url`
+	Container_network []string `toml:container_network`
+	Label             []map[string]string
+}
+type FileConfigLable struct {
+	Name  string
+	Value string
+}
+
+func GetConfigFilePath() string {
+	homedir, err := HomeDir()
+	if err != nil {
+		fmt.Println("获取系统家目录获取异常")
+		homedir = "."
+	}
+	configfile := filepath.Join(homedir, ".nacos_conf.toml")
+	return configfile
+}
+
+func IPFilePathLoad() {
 	if _, err := os.Stat(nacos.Ipfile); err != nil {
 		if !os.IsExist(err) {
 			nacos.Ipparse = false
@@ -20,57 +40,52 @@ func FilePathCheck() {
 		}
 	} else {
 		nacos.Ipparse = true
+		file, err := os.OpenFile(nacos.Ipfile, os.O_RDONLY, 0644)
+		if err != nil {
+			fmt.Println("打开文件错误")
+			os.Exit(nacos.Exitcode)
+		}
+		defer file.Close()
+		fileb, _ := ioutil.ReadAll(file)
+		if err := json.Unmarshal(fileb, &nacos.Ipdata); err != nil {
+			fmt.Println("ip文件解析错误,请确认json格式")
+			nacos.Ipparse = false
+		}
 	}
 }
 
-func NacosConfigCheck() {
-	homedir, err := HomeDir()
-	if err != nil {
-		fmt.Println("获取系统家目录获取异常")
-		homedir = "."
-	}
-	configfile := filepath.Join(homedir, ".nacos_url")
+func LoadConfig() {
+	IPFilePathLoad()
+	var config FileConfig
+	configfile := GetConfigFilePath()
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("配置文件错误格式错误", configfile)
+			fmt.Println(err)
+			os.Exit(2)
+		}
+	}()
 	if _, err := os.Stat(configfile); err != nil {
 		if !os.IsExist(err) {
 			return
 		}
 	} else {
-		cfg, err := ini.Load(configfile)
+		_, err := toml.DecodeFile(configfile, &config)
+		for _, lable := range config.Label {
+			nacos.AddLable[lable["name"]] = lable["value"]
+		}
 		if err != nil {
-			fmt.Println("读取配置文件发生错误", err)
+			fmt.Println("配置文件错误格式错误", configfile)
 			return
 		}
 		if nacos.Nacosurl == "http://dev-k8s-nacos:8848" {
-			Nacosurl := cfg.Section("").Key("url").String()
-			if len(Nacosurl) == 0 {
-				fmt.Println("Nacos配置文件存在问题:", configfile)
-				return
-			}
-			nacos.Nacosurl = cfg.Section("").Key("url").String()
+			nacos.Nacosurl = config.Url
+		}
+		if len(config.Container_network) != 0 {
+			nacos.MaxCidrBlocks = config.Container_network
 		}
 	}
-}
-func IP_Parse() {
-	file, err := os.OpenFile(nacos.Ipfile, os.O_RDONLY, 0644)
-	if err != nil {
-		fmt.Println("打开文件错误")
-		os.Exit(nacos.Exitcode)
-	}
-	defer file.Close()
-	fileb, _ := ioutil.ReadAll(file)
-	if err := json.Unmarshal(fileb, &nacos.Ipdata); err != nil {
-		fmt.Println("ip文件解析错误,请确认json格式")
-		nacos.Ipparse = false
-		//os.Exit(nacos.Exitcode)
-	}
-}
-
-func FlagCheck() {
-	FilePathCheck()
 	nacos.ContainerdInit()
-	if nacos.Ipparse {
-		IP_Parse()
-	}
 }
 
 func NacosInit() {
@@ -81,8 +96,7 @@ func NacosInit() {
 			os.Exit(2)
 		}
 	}()
-	FlagCheck()
-	NacosConfigCheck()
+	LoadConfig()
 	u, err := url.Parse(nacos.Nacosurl)
 	if err != nil {
 		fmt.Println("url解析错误!")

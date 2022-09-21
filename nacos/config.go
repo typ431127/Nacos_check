@@ -22,6 +22,7 @@ var (
 	ExportJson     bool              // 导出json
 	Web            bool              // 开启webapi
 	Port           string            // web端口
+	AddLable       map[string]string
 	Na             *Nacos
 )
 
