@@ -157,7 +157,7 @@ label = [
 ```
 #### docker启动web服务 Prometheus httpd_sd_config 使用
 ```
-docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.5.0
+docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.5.1
 访问 http://localhost:8099
 ```
 
