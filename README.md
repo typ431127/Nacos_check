@@ -89,7 +89,7 @@ file_sd_configs:
 ```
 
 ```shell
-文件级别自动发现
+prometheus-file-sd 自动发现
 ./nacos_check-linux-amd64 --url http://nacos-0.xxxxx:8848 -o  discovery.json
 
 http_sd_configs 自动发现
