@@ -28,14 +28,15 @@ Available Commands:
   web         开启web api Prometheus http_sd_configs
 
 Flags:
-  -f, --find string       查找服务
-  -h, --help              help for nacos_check
-  -i, --ipfile string     ip解析文件 (default "salt_ip.json")
-      --json              输出json
-  -s, --second duration   监控服务间隔刷新时间 (default 5s)
-  -u, --url string        Nacos地址 (default "http://dev-k8s-nacos:8848")
-  -w, --watch             监控服务
-  -o, --write string      prometheus 自动发现文件路径
+  -f, --find string            查找服务
+  -h, --help                   help for nacos_check
+  -i, --ipfile string          ip解析文件 (default "salt_ip.json")
+      --json                   输出json
+  -l, --lable stringToString   添加标签 -l env=dev,pro=java (default [])
+  -s, --second duration        监控服务间隔刷新时间 (default 5s)
+  -u, --url string             Nacos地址 (default "http://dev-k8s-nacos:8848")
+  -w, --watch                  监控服务
+  -o, --write string           导出json文件, prometheus 自动发现文件路径
 
 Use "nacos_check [command] --help" for more information about a command.
 ```
