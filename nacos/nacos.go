@@ -35,8 +35,10 @@ func (d *Nacos) GetJson(result_type string) (result interface{}, err error) {
 		var nacos NacosFile
 		for _, na := range nacos_server.HealthInstance {
 			var ta NacosTarget
-			//ta.Labels = make(map[string]string)
-			ta.Labels = AddLable
+			ta.Labels = make(map[string]string)
+			for key, value := range AddLable {
+				ta.Labels[key] = value
+			}
 			ta.Targets = append(ta.Targets, na[2])
 			ta.Labels["namespace"] = na[0]
 			ta.Labels["service"] = na[1]
