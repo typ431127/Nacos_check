@@ -266,7 +266,7 @@ func (d *Nacos) GetNacosInstance() {
 					} else {
 						_tmpmap = append(_tmpmap, host.Ip)
 					}
-					_tmpmap = append(_tmpmap, fmt.Sprintf("%.0f", host.Weight))
+					_tmpmap = append(_tmpmap, fmt.Sprintf("%.1f", host.Weight))
 					pid := u.FindStringSubmatch(metadataUrl)
 					if len(pid) == 2 {
 						_tmpmap = append(_tmpmap, pid[1])
