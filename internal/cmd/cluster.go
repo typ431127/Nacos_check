@@ -5,7 +5,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
-	"nacos_check/nacos"
+	"nacos-check/internal/config"
 	"os"
 	"strconv"
 )
@@ -15,14 +15,14 @@ var clusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "集群状态",
 	Run: func(cmd *cobra.Command, args []string) {
-		nacos.Cluster_status = true
+		config.CLUSTER = true
 		if v2upgrade {
-			nacos.V2upgrade = true
+			config.V2UPGRADE = true
 		}
-		nacos.Na.GetNacosInstance()
+		Nacos.GetNacosInstance()
 		tablecluser := tablewriter.NewWriter(os.Stdout)
 		tablecluser.SetHeader([]string{"节点", "端口", "状态", "版本", "刷新时间", "健康实例", "异常实例"})
-		for _, key := range nacos.Na.Clusterdata {
+		for _, key := range Nacos.Clusterdata {
 			tablecluser.Append([]string{
 				key.Ip,
 				key.Port,
@@ -33,13 +33,13 @@ var clusterCmd = &cobra.Command{
 				strconv.Itoa(len(key.UnHealthInstance)),
 			})
 		}
-		leader := gjson.Get(nacos.Na.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
+		leader := gjson.Get(Nacos.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
 		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), leader)
 		tablecluser.Render()
 		if v2upgrade {
 			tablecluser := tablewriter.NewWriter(os.Stdout)
 			tablecluser.SetHeader([]string{"节点", "双写", "v2服务", "v2实例", "v1服务", "v1实例", "upgraded", "全部V2"})
-			for _, key := range nacos.Na.Clusterdata {
+			for _, key := range Nacos.Clusterdata {
 				tablecluser.Append([]string{
 					key.Ip,
 					strconv.FormatBool(key.V2Upgrade.IsDoubleWriteEnabled),

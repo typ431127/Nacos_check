@@ -7,7 +7,7 @@ WORKDIR /api
 ENV GOPROXY=https://goproxy.cn,direct
 
 COPY . .
-RUN go build -o ./build-app main.go
+RUN go build -o ./build-app cmd/nacos-check/main.go
 
 FROM alpine:3.14
 

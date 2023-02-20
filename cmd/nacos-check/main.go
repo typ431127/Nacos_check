@@ -1,8 +1,6 @@
 package main
 
-import (
-	"nacos_check/cmd"
-)
+import "nacos-check/internal/cmd"
 
 func main() {
 	cmd.Execute()

@@ -1,4 +1,4 @@
-package nacos
+package config
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"github.com/tidwall/gjson"
 	"gopkg.in/ini.v1"
 	"io/ioutil"
+	"nacos-check/pkg"
 	"net/http"
 	"os"
 	"path"
@@ -36,7 +37,7 @@ func (d *Nacos) GetJson(result_type string) (result interface{}, err error) {
 		for _, na := range nacos_server.HealthInstance {
 			var ta NacosTarget
 			ta.Labels = make(map[string]string)
-			for key, value := range AddLable {
+			for key, value := range ADDLABEL {
 				ta.Labels[key] = value
 			}
 			ta.Targets = append(ta.Targets, na[2])
@@ -69,10 +70,10 @@ func (d *Nacos) GetJson(result_type string) (result interface{}, err error) {
 func (d *Nacos) WriteFile() {
 	var basedir string
 	var filename string
-	basedir = path.Dir(Writefile)
-	filename = path.Base(Writefile)
+	basedir = path.Dir(WRITEFILE)
+	filename = path.Base(WRITEFILE)
 	if err := os.MkdirAll(basedir, os.ModePerm); err != nil {
-		os.Exit(Exitcode)
+		os.Exit(EXITCODE)
 	}
 	file, err := os.OpenFile(basedir+"/.nacos_tmp.json", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -88,7 +89,7 @@ func (d *Nacos) WriteFile() {
 	}
 	if _, err := file.Write(data); err != nil {
 		fmt.Println("写入失败", err)
-		os.Exit(Exitcode)
+		os.Exit(EXITCODE)
 	}
 	file.Close()
 	os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename)
@@ -111,13 +112,13 @@ func (d *Nacos) HttpReq(url string) []byte {
 }
 
 func (d *Nacos) GetCluster() {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", Nacosurl)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", NACOSURL)
 	res := d.HttpReq(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
-	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", Nacosurl)
+	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", NACOSURL)
 	res := d.HttpReq(_url)
 	err := json.Unmarshal(res, &d.Namespaces)
 	if err != nil {
@@ -125,19 +126,19 @@ func (d *Nacos) GetNameSpace() {
 	}
 }
 func (d *Nacos) GetService(namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", Nacosurl, namespaceId)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", NACOSURL, namespaceId)
 	res := d.HttpReq(_url)
 	return res
 }
 
 func (d *Nacos) GetInstance(servicename string, namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", Nacosurl, servicename, namespaceId)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", NACOSURL, servicename, namespaceId)
 	res := d.HttpReq(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", Nacosurl)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", NACOSURL)
 	res := d.HttpReq(_url)
 	return res
 }
@@ -149,16 +150,16 @@ func (d *Nacos) TableRender() {
 	table.SetHeader(tabletitle)
 	for _, v := range nacos_server.HealthInstance {
 		tabledata := v[0:8]
-		if Findstr == "" {
+		if FIND == "" {
 			table.Append(tabledata)
 		} else {
-			if strings.Contains(v[0], Findstr) {
+			if strings.Contains(v[0], FIND) {
 				table.Append(tabledata)
 			}
-			if strings.Contains(v[1], Findstr) {
+			if strings.Contains(v[1], FIND) {
 				table.Append(tabledata)
 			}
-			if strings.Contains(v[2], Findstr) {
+			if strings.Contains(v[2], FIND) {
 				table.Append(tabledata)
 			}
 		}
@@ -169,13 +170,13 @@ func (d *Nacos) TableRender() {
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader(tabletitle)
 		for _, v := range d.Healthydataerr {
-			if strings.Contains(v[0], Findstr) {
+			if strings.Contains(v[0], FIND) {
 				table.Append(v)
 			}
-			if strings.Contains(v[1], Findstr) {
+			if strings.Contains(v[1], FIND) {
 				table.Append(v)
 			}
-			if strings.Contains(v[2], Findstr) {
+			if strings.Contains(v[2], FIND) {
 				table.Append(v)
 			}
 		}
@@ -202,7 +203,7 @@ func (d *Nacos) GetNacosInstance() {
 		d.Clusterdata[key] = cluster
 		cluster_list = append(cluster_list, key)
 	}
-	if !Cluster_status {
+	if !CLUSTER {
 		for _, server := range cluster_list {
 			url := fmt.Sprintf("%s://%s", d.Scheme, server)
 			if url == d.DefaultUlr {
@@ -210,19 +211,19 @@ func (d *Nacos) GetNacosInstance() {
 			}
 		}
 	}
-	if !Cluster_status && len(cluster_list) != 1 {
+	if !CLUSTER && len(cluster_list) != 1 {
 		url := fmt.Sprintf("%s", d.Host)
 		cluster_list = []string{url}
 	}
 	for _, server := range cluster_list {
-		Nacosurl = fmt.Sprintf("%s://%s", d.Scheme, server)
+		NACOSURL = fmt.Sprintf("%s://%s", d.Scheme, server)
 		d.GetNameSpace()
 		for _, namespace := range d.Namespaces.Data {
 			res := d.GetService(namespace.Namespace)
 			var ser Service
 			var cluster ClusterStatus
 			cluster = d.Clusterdata[server]
-			if V2upgrade {
+			if V2UPGRADE {
 				v2 := d.GetV2Upgrade()
 				rep, _ := regexp.Compile(".*##.*")
 				v2 = rep.ReplaceAll(v2, []byte(""))
@@ -261,7 +262,7 @@ func (d *Nacos) GetNacosInstance() {
 					_tmpmap := make([]string, 0)
 					ipinfo := fmt.Sprintf("%s:%d", host.Ip, host.Port)
 					_tmpmap = append(_tmpmap, namespace.NamespaceShowName, se, ipinfo, strconv.FormatBool(host.Healthy))
-					if Ipparse {
+					if PARSEIP {
 						_tmpmap = append(_tmpmap, GetHostName(host.Ip))
 					} else {
 						_tmpmap = append(_tmpmap, host.Ip)
@@ -273,7 +274,7 @@ func (d *Nacos) GetNacosInstance() {
 					} else {
 						_tmpmap = append(_tmpmap, "")
 					}
-					_tmpmap = append(_tmpmap, strconv.FormatBool(ContainerdIPCheck(host.Ip)), host.Ip, strconv.Itoa(host.Port))
+					_tmpmap = append(_tmpmap, strconv.FormatBool(pkg.ContainerdIPCheck(host.Ip)), host.Ip, strconv.Itoa(host.Port))
 					if host.Healthy {
 						cluster.HealthInstance = append(cluster.HealthInstance, _tmpmap)
 					} else {
@@ -287,7 +288,7 @@ func (d *Nacos) GetNacosInstance() {
 }
 
 func GetHostName(ip string) string {
-	for hostname, i := range Ipdata {
+	for hostname, i := range IPDATA {
 		if ip == i {
 			return hostname
 		}

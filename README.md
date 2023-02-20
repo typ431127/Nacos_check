@@ -5,7 +5,7 @@ golang 运维萌新，学习项目... 😊
 
 ### 安装
 ```shell
-curl -L https://github.com/typ431127/Nacos_check/releases/download/0.5.1/nacos_check-linux-amd64 -o nacos_check
+curl -L https://github.com/typ431127/Nacos_check/releases/download/0.5.2/nacos_check-linux-amd64 -o nacos_check
 chmod +x nacos_check
 ./nacos_check --url https://nacos地址
 ```
@@ -158,7 +158,7 @@ label = [
 ```
 #### docker启动web服务 Prometheus httpd_sd_config 使用
 ```
-docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.5.1-fix
+docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nacos-check:0.6
 访问 http://localhost:8099
 ```
 

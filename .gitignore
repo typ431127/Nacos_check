@@ -1,3 +1,5 @@
 /nacos.json
 .idea
 main
+cmd/nacos-check/1.json
+cmd/nacos-check/nacos-check.exe

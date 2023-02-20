@@ -1,4 +1,4 @@
-package nacos
+package pkg
 
 import (
 	"net"
