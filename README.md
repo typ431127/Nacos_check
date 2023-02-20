@@ -5,9 +5,10 @@ golang 运维萌新，学习项目... 😊
 
 ### 安装
 ```shell
-curl -L https://github.com/typ431127/Nacos_check/releases/download/0.6/nacos_check-linux-amd64 -o nacos_check
-chmod +x nacos_check
-./nacos_check --url https://nacos地址
+curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.6/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
+tar xvf nacos-check_Linux_x86_64.tar.gz
+chmod +x nacos-check
+./nacos-check --url https://nacos地址
 ```
 
 ### 使用帮助
