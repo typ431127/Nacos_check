@@ -6,6 +6,7 @@ import (
 	"nacos-check/internal/config"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -48,12 +49,15 @@ var rootCmd = &cobra.Command{
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		NacosFilePathLoad()
-		u, err := url.Parse(config.NACOSURL)
+		for _, _url := range strings.Split(config.NACOSURL, ",") {
+			config.NACOSURLLIST = append(config.NACOSURLLIST, _url)
+		}
+		u, err := url.Parse(config.NACOSURLLIST[0])
 		if err != nil {
 			fmt.Println("url解析错误!")
 			os.Exit(config.EXITCODE)
 		}
-		Nacos.DefaultUlr = config.NACOSURL
+		Nacos.DefaultUlr = config.NACOSURLLIST[0]
 		Nacos.Host = u.Host
 		Nacos.Scheme = u.Scheme
 		Nacos.Port = u.Port()

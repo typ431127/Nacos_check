@@ -107,7 +107,7 @@ func (d *Nacos) HttpReq(apiurl string) []byte {
 	if res.StatusCode != 200 {
 		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/operator/servers" {
 			//panic(fmt.Sprintf("单机不支持集群,请求状态码异常:%d", res.StatusCode))
-			_url := fmt.Sprintf("%s/nacos/v2/core/cluster/node/list", NACOSURL)
+			_url := fmt.Sprintf("%s/nacos/v2/core/cluster/node/list", d.DefaultUlr)
 			return d.HttpReq(_url)
 		}
 		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/upgrade/ops/metrics" {
@@ -122,13 +122,13 @@ func (d *Nacos) HttpReq(apiurl string) []byte {
 }
 
 func (d *Nacos) GetCluster() {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", NACOSURL)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", d.DefaultUlr)
 	res := d.HttpReq(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
-	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", NACOSURL)
+	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", d.DefaultUlr)
 	res := d.HttpReq(_url)
 	err := json.Unmarshal(res, &d.Namespaces)
 	if err != nil {
@@ -136,19 +136,19 @@ func (d *Nacos) GetNameSpace() {
 	}
 }
 func (d *Nacos) GetService(namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", NACOSURL, namespaceId)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", d.DefaultUlr, namespaceId)
 	res := d.HttpReq(_url)
 	return res
 }
 
 func (d *Nacos) GetInstance(servicename string, namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", NACOSURL, servicename, namespaceId)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", d.DefaultUlr, servicename, namespaceId)
 	res := d.HttpReq(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", NACOSURL)
+	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", d.DefaultUlr)
 	res := d.HttpReq(_url)
 	return res
 }
@@ -248,7 +248,7 @@ func (d *Nacos) GetNacosInstance() {
 		cluster_list = []string{_url}
 	}
 	for _, server := range cluster_list {
-		NACOSURL = fmt.Sprintf("%s://%s", d.Scheme, server)
+		//NACOSURL = fmt.Sprintf("%s://%s", d.Scheme, server)
 		d.GetNameSpace()
 		for _, namespace := range d.Namespaces.Data {
 			res := d.GetService(namespace.Namespace)

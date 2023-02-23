@@ -7,23 +7,24 @@ import (
 )
 
 var (
-	NACOSURL   string            // nacos url地址
-	FIND       string            // 模糊匹配服务
-	WRITEFILE  string            // prometheus 字段 文件路径
-	IPFILE     string            // ip hostname 解析文件
-	PARSEIP    bool              // 是否启用ip解析
-	CLUSTER    bool              // 集群状态
-	IPDATA     map[string]string // 全部ip数据
-	EXITCODE   int               // 全局退出状态码
-	VERSION    bool              // 版本
-	WATCH      bool              // 监控
-	SECOND     time.Duration     // 监控服务间隔
-	V2UPGRADE  bool              // 2.0版本升级详情
-	EXPORTJSON bool              // 导出json
-	WEB        bool              // 开启webapi
-	WEBPORT    string            // web端口
-	ADDLABEL   map[string]string
-	Na         *Nacos
+	NACOSURL     string // nacos url地址
+	NACOSURLLIST []string
+	FIND         string            // 模糊匹配服务
+	WRITEFILE    string            // prometheus 字段 文件路径
+	IPFILE       string            // ip hostname 解析文件
+	PARSEIP      bool              // 是否启用ip解析
+	CLUSTER      bool              // 集群状态
+	IPDATA       map[string]string // 全部ip数据
+	EXITCODE     int               // 全局退出状态码
+	VERSION      bool              // 版本
+	WATCH        bool              // 监控
+	SECOND       time.Duration     // 监控服务间隔
+	V2UPGRADE    bool              // 2.0版本升级详情
+	EXPORTJSON   bool              // 导出json
+	WEB          bool              // 开启webapi
+	WEBPORT      string            // web端口
+	ADDLABEL     map[string]string
+	Na           *Nacos
 )
 
 type Nacos struct {

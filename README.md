@@ -164,15 +164,17 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 访问 http://localhost:8099
 ```
 
-#### 注册实例到Nacos
+#### 工具注册到Nacos
 ```shell
  ./nacos_check-linux-amd64 register -i 192.168.1.4 -p ":8048" -n ddn-test1 --url http://192.16
 8.100.132:8848
+ ./nacos_check-linux-amd64 register -i 192.168.1.4 -p ":8048" -n ddn-test1 --url \
+ http://192.168.100.132:8848,http://192.168.100.133:8848,http://192.168.100.134:8848
 ```
-方便快捷注册到Nacos，方便运维调试服务
+执行后工具会开启一个web服务并注册到Nacos上面，同时可指定多个Nacos，此功能方便运维排查问题
 - -i 指定注册到Nacos的IP地址
 - -p 指定开启端口
-- --url 指定Nacos服务地址
+- --url 指定Nacos服务地址，多个地址,号分开
 - -n 指定注册到Nacos的服务名称
 - 
 #### 主机名解析
