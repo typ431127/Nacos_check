@@ -32,11 +32,13 @@ type Nacos struct {
 	DefaultUlr     string
 	Host           string
 	Scheme         string
+	Port           string
 	Healthydata    [][]string
 	Healthydataerr [][]string
 	AllInstance    [][]string
 	Cluster        string
-	Clusterdata    map[string]ClusterStatus // 集群状态数据
+	Leader         string
+	Clusterdata    map[string]ClusterStatus
 }
 
 type ClusterStatus struct {

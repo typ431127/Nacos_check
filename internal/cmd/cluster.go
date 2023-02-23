@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/tidwall/gjson"
 	"nacos-check/internal/config"
 	"os"
 	"strconv"
@@ -33,8 +32,8 @@ var clusterCmd = &cobra.Command{
 				strconv.Itoa(len(key.UnHealthInstance)),
 			})
 		}
-		leader := gjson.Get(Nacos.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
-		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), leader)
+		//leader := gjson.Get(Nacos.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
+		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), Nacos.Leader)
 		tablecluser.Render()
 		if v2upgrade {
 			tablecluser := tablewriter.NewWriter(os.Stdout)
@@ -59,5 +58,5 @@ var clusterCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(clusterCmd)
-	clusterCmd.Flags().BoolVarP(&v2upgrade, "v2upgrade", "v", false, "v2升级接口状态")
+	clusterCmd.Flags().BoolVarP(&v2upgrade, "v2upgrade", "v", false, "v2升级接口状态 2.2.0以上版本不支持")
 }

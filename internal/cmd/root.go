@@ -56,6 +56,7 @@ var rootCmd = &cobra.Command{
 		Nacos.DefaultUlr = config.NACOSURL
 		Nacos.Host = u.Host
 		Nacos.Scheme = u.Scheme
+		Nacos.Port = u.Port()
 		Nacos.GetNameSpace()
 		Nacos.GetNacosInstance()
 	},

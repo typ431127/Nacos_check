@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"nacos-check/pkg"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -96,14 +97,23 @@ func (d *Nacos) WriteFile() {
 	fmt.Println("写入成功:", basedir+"/"+filename)
 }
 
-func (d *Nacos) HttpReq(url string) []byte {
-	req, _ := http.NewRequest("GET", url, nil)
+func (d *Nacos) HttpReq(apiurl string) []byte {
+	req, _ := http.NewRequest("GET", apiurl, nil)
+	u, err := url.Parse(apiurl)
 	res, err := d.Client.Do(req)
 	if err != nil {
 		panic(err)
 	}
 	if res.StatusCode != 200 {
-		panic(fmt.Sprintf("请求状态码异常:%d", res.StatusCode))
+		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/operator/servers" {
+			//panic(fmt.Sprintf("单机不支持集群,请求状态码异常:%d", res.StatusCode))
+			_url := fmt.Sprintf("%s/nacos/v2/core/cluster/node/list", NACOSURL)
+			return d.HttpReq(_url)
+		}
+		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/upgrade/ops/metrics" {
+			panic(fmt.Sprintf("此版本不支持查看升级状态:%d", res.StatusCode))
+		}
+		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
 	}
 	defer res.Body.Close()
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -185,35 +195,57 @@ func (d *Nacos) TableRender() {
 	}
 }
 func (d *Nacos) GetNacosInstance() {
-	d.GetCluster()
+	cluster_list := []string{d.Host}
 	d.Clusterdata = make(map[string]ClusterStatus)
-	results := gjson.GetMany(d.Cluster, "servers.#.ip", "servers.#.port", "servers.#.state", "servers.#.extendInfo.version", "servers.#.extendInfo.lastRefreshTime")
-	cluster_list := []string{}
-	for key := range results[0].Array() {
-		timeStampStr := results[4].Array()[key].String()
-		timeStamp, _ := strconv.Atoi(timeStampStr)
-		formatTimeStr := time.Unix(int64(timeStamp/1000), 0).Format("2006-01-02 15:04:05")
+	if CLUSTER {
+		d.GetCluster()
+		var results []gjson.Result
+		var leader gjson.Result
+		if len(gjson.Get(string(d.Cluster), "servers").String()) != 0 {
+			leader = gjson.Get(d.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
+			results = gjson.GetMany(d.Cluster, "servers.#.ip", "servers.#.port", "servers.#.state", "servers.#.extendInfo.version", "servers.#.extendInfo.lastRefreshTime")
+		} else {
+			leader = gjson.Get(d.Cluster, "data.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
+			results = gjson.GetMany(d.Cluster, "data.#.ip", "data.#.port", "data.#.state", "data.#.extendInfo.version", "data.#.extendInfo.lastRefreshTime")
+		}
+		d.Leader = leader.String()
+		for key := range results[0].Array() {
+			timeStampStr := results[4].Array()[key].String()
+			timeStamp, _ := strconv.Atoi(timeStampStr)
+			formatTimeStr := time.Unix(int64(timeStamp/1000), 0).Format("2006-01-02 15:04:05")
+			var cluster ClusterStatus
+			cluster.Ip = results[0].Array()[key].String()
+			cluster.Port = results[1].Array()[key].String()
+			cluster.State = results[2].Array()[key].String()
+			cluster.Version = results[3].Array()[key].String()
+			cluster.LastRefreshTime = formatTimeStr
+			key := fmt.Sprintf("%s:%s", results[0].Array()[key].String(), results[1].Array()[key].String())
+			d.Clusterdata[key] = cluster
+			cluster_list = append(cluster_list, key)
+		}
+	} else {
 		var cluster ClusterStatus
-		cluster.Ip = results[0].Array()[key].String()
-		cluster.Port = results[1].Array()[key].String()
-		cluster.State = results[2].Array()[key].String()
-		cluster.Version = results[3].Array()[key].String()
-		cluster.LastRefreshTime = formatTimeStr
-		key := fmt.Sprintf("%s:%s", results[0].Array()[key].String(), results[1].Array()[key].String())
+		cluster.Ip = d.Host
+		cluster.Port = d.Port
+		cluster.State = "UP"
+		cluster.Version = ""
+		cluster.LastRefreshTime = ""
+		key := fmt.Sprintf("%s:%s", d.Host, d.Port)
 		d.Clusterdata[key] = cluster
 		cluster_list = append(cluster_list, key)
+
 	}
 	if !CLUSTER {
 		for _, server := range cluster_list {
-			url := fmt.Sprintf("%s://%s", d.Scheme, server)
-			if url == d.DefaultUlr {
+			_url := fmt.Sprintf("%s://%s", d.Scheme, server)
+			if _url == d.DefaultUlr {
 				cluster_list = []string{server}
 			}
 		}
 	}
 	if !CLUSTER && len(cluster_list) != 1 {
-		url := fmt.Sprintf("%s", d.Host)
-		cluster_list = []string{url}
+		_url := fmt.Sprintf("%s", d.Host)
+		cluster_list = []string{_url}
 	}
 	for _, server := range cluster_list {
 		NACOSURL = fmt.Sprintf("%s://%s", d.Scheme, server)

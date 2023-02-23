@@ -17,20 +17,21 @@ chmod +x nacos-check
 Nacos
 
 Usage:
-  nacos_check [flags]
-  nacos_check [command]
+  nacos-check [flags]
+  nacos-check [command]
 
 Available Commands:
   cluster     集群状态
   completion  Generate the autocompletion script for the specified shell
   config      查看本地配置文件路径
   help        Help about any command
+  register    注册本实例到Nacos并开启webapi
   version     查看版本
   web         开启web api Prometheus http_sd_configs
 
 Flags:
   -f, --find string            查找服务
-  -h, --help                   help for nacos_check
+  -h, --help                   help for nacos-check
   -i, --ipfile string          ip解析文件 (default "salt_ip.json")
       --json                   输出json
   -l, --lable stringToString   添加标签 -l env=dev,pro=java (default [])
@@ -39,7 +40,7 @@ Flags:
   -w, --watch                  监控服务
   -o, --write string           导出json文件, prometheus 自动发现文件路径
 
-Use "nacos_check [command] --help" for more information about a command.
+Use "nacos-check [command] --help" for more information about a command.
 ```
 
 #### 显示所有实例注册信息
@@ -163,6 +164,17 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 访问 http://localhost:8099
 ```
 
+#### 注册实例到Nacos
+```shell
+ ./nacos_check-linux-amd64 register -i 192.168.1.4 -p ":8048" -n ddn-test1 --url http://192.16
+8.100.132:8848
+```
+方便快捷注册到Nacos，方便运维调试服务
+- -i 指定注册到Nacos的IP地址
+- -p 指定开启端口
+- --url 指定Nacos服务地址
+- -n 指定注册到Nacos的服务名称
+- 
 #### 主机名解析
 因为默认只获取到主机ip，获取不到主机名,可以指定ipfile解析主机名，有条件可以二次开发对接自己cmdb, 文件格式如下 (可选)
 

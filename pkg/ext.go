@@ -1,7 +1,9 @@
 package pkg
 
 import (
+	"fmt"
 	"net"
+	"strings"
 )
 
 var cidrs []*net.IPNet
@@ -26,4 +28,22 @@ func ContainerdIPCheck(ip string) bool {
 		}
 	}
 	return false
+}
+
+func GetIps() (ips []string) {
+	interfaceAddr, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Printf("fail to get net interfaces ipAddress: %v\n", err)
+		return ips
+	}
+
+	for _, address := range interfaceAddr {
+		ipNet, isVailIpNet := address.(*net.IPNet)
+		if isVailIpNet && !ipNet.IP.IsLoopback() {
+			if !strings.HasPrefix(ipNet.IP.To4().String(), "169.254") && ipNet.IP.To4() != nil {
+				ips = append(ips, ipNet.IP.String())
+			}
+		}
+	}
+	return ips
 }
