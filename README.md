@@ -3,6 +3,13 @@
 方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
 golang 运维萌新，学习项目... 😊
 
+- 快速查找注册服务，支持匹配名称，命名空间，端口，ip
+- 支持命令行导出json
+- 支持自定义Prometheus label
+- 支持Prometheus自动发现，`file_sd`和`http_sd_configs`
+- 查看集群状态，以及v1升级v2接口详情
+- 支持注册本身到Nacos集群
+
 ### 安装
 ```shell
 curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.6-fix/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
@@ -171,12 +178,13 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
  ./nacos_check-linux-amd64 register -i 192.168.1.4 -p ":8048" -n ddn-test1 --url \
  http://192.168.100.132:8848,http://192.168.100.133:8848,http://192.168.100.134:8848
 ```
-执行后工具会开启一个web服务并注册到Nacos上面，同时可指定多个Nacos，此功能方便运维排查问题
+执行后工具会开启一个web服务并注册到Nacos上面，同时可指定多个Nacos地址，此功能方便运维排查Nacos注册问题。
 - -i 指定注册到Nacos的IP地址
 - -p 指定开启端口
 - --url 指定Nacos服务地址，多个地址,号分开
 - -n 指定注册到Nacos的服务名称
-- 
+
+>注意: 仅注册功能支持多个nacos地址写法
 #### 主机名解析
 因为默认只获取到主机ip，获取不到主机名,可以指定ipfile解析主机名，有条件可以二次开发对接自己cmdb, 文件格式如下 (可选)
 
