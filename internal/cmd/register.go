@@ -32,21 +32,6 @@ func init() {
 	rootCmd.AddCommand(registerCmd)
 }
 
-//func RegWebServer() {
-//	fmt.Println("Nacos:", config.NACOSURL)
-//	gin.SetMode(gin.ReleaseMode)
-//	r := gin.Default()
-//	v1 := r.Group("/")
-//	{
-//		v1.GET("/*route", func(c *gin.Context) {
-//			c.JSON(200, gin.H{"up": 1})
-//		})
-//	}
-//	err := r.Run(config.WEBPORT)
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//}
 func Register() {
 	var serverConfigs []constant.ServerConfig
 	webportUint, err := strconv.ParseUint(strings.Split(config.WEBPORT, ":")[1], 10, 64)
@@ -72,7 +57,6 @@ func Register() {
 			ServerConfigs: serverConfigs,
 		},
 	)
-	fmt.Println(serverConfigs)
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
 		Ip:          ipaddr,
 		Port:        webportUint,

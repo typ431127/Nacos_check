@@ -10,3 +10,6 @@ label = [
     {name = "env",value = "dev"},
     {name = "os",value = "linux"}
 ]
+
+# 定义默认ip解析文件
+ipfile = "/mnt/c/xxx/ip.json"

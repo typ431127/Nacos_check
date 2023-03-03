@@ -49,11 +49,11 @@ func GetConfigFilePath() string {
 }
 
 func NacosFilePathLoad() {
-	IPFilePathLoad()
 	type NewConfig struct {
 		Url               string   `toml:"url"`
 		Container_network []string `toml:"container_network"`
 		Label             []map[string]string
+		Ipfile            string `toml:"ipfile"`
 	}
 	homedir, err := pkg.HomeDir()
 	if err != nil {
@@ -80,12 +80,14 @@ func NacosFilePathLoad() {
 			fmt.Println("配置文件错误格式错误", configfile)
 			return
 		}
+		config.IPFILE = newConfig.Ipfile
 		if config.NACOSURL == "http://dev-k8s-nacos:8848" {
 			config.NACOSURL = newConfig.Url
 		}
 		if len(newConfig.Container_network) != 0 {
 			pkg.MaxCidrBlocks = newConfig.Container_network
 		}
+		IPFilePathLoad()
 		pkg.ContainerdInit()
 	}
 }
