@@ -3,7 +3,8 @@
 方便运维查看nacos注册服务，快速查找服务，同时生成prometheus自动发现所需要的json文件。   
 golang 运维萌新，学习项目... 😊
 
-- 快速查找注册服务，支持匹配名称，命名空间，端口，ip
+- 快速查找注册服务，支持匹配名称，命名空间，端口，ip，多个服务模糊匹配
+- 支持指定命名空间，默认全部
 - 支持命令行导出json
 - 支持自定义Prometheus label
 - 支持Prometheus自动发现，`file_sd`和`http_sd_configs`
@@ -12,7 +13,7 @@ golang 运维萌新，学习项目... 😊
 
 ### 安装
 ```shell
-curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.6-fix/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
+curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.6.1/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
 tar xvf nacos-check_Linux_x86_64.tar.gz
 chmod +x nacos-check
 ./nacos-check --url https://nacos地址
@@ -38,10 +39,12 @@ Available Commands:
 
 Flags:
   -f, --find string            查找服务
+      --group string           指定分组 多个分组 group1,group2 (default "DEFAULT_GROUP")
   -h, --help                   help for nacos-check
   -i, --ipfile string          ip解析文件 (default "salt_ip.json")
       --json                   输出json
   -l, --lable stringToString   添加标签 -l env=dev,pro=java (default [])
+      --namespace string       指定命名空间ID 多个: id1,id2,id3
   -s, --second duration        监控服务间隔刷新时间 (default 5s)
   -u, --url string             Nacos地址 (default "http://dev-k8s-nacos:8848")
   -w, --watch                  监控服务
@@ -66,6 +69,10 @@ Use "nacos-check [command] --help" for more information about a command.
 ./nacos_check-linux-amd64 --url http://nacos-0:8848 -f gateway 
 ./nacos_check-linux-amd64 --url http://nacos-0:8848 -f 8080
 ./nacos_check-linux-amd64 --url http://nacos-0:8848 -f 172.30
+# 多个服务匹配,分割
+./nacos_check-linux-amd64 --url http://nacos-0:8848 -f gateway,user,order
+# 指定命名空间和group
+./nacos_check-linux-amd64 --url http://nacos-0:8848 --namespace df7bee71-33ff-49ae-9adc-d9412b3d2ddb,dc7bca41-5aeb-417e-9876-488dcfb5b911 --group ddn,DEFAULT_GROUP -f xxx
 ```
 - 支持查找服务名，ip，端口,命名空间
 #### 查找注册服务,每10秒刷新一次
@@ -159,6 +166,14 @@ url = "http://nacos-0:8848"
 # 定义容器网段
 container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
 
+# 定义指定的namespaceid (可选,默认所有)
+# 等同命令行 --namespace id1,id2
+namespace = ["df7bee71-33ff-49ae-9adc-d9412b3d2ddb","dc7bca41-5aeb-417e-9876-488dcfb5b911"]
+
+# 定义group组 等同命令行 --group ddn1,ddn2, (可选,默认DEFAULT_GROUP)
+group = ["ddn","ddn","ddn2","DEFAULT_GROUP"]
+
+
 # 设置默认导出json和web服务附加标签
 label = [
     {name = "env",value = "dev"},
@@ -181,9 +196,13 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 8.100.132:8848
  ./nacos_check-linux-amd64 register -i 192.168.1.4 -p ":8048" -n ddn-test1 --url \
  http://192.168.100.132:8848,http://192.168.100.133:8848,http://192.168.100.134:8848
+ 
+ ./nacos_check-linux-amd64 register -n ops-test  --namespace dc7bca41-5aeb-417e-9876-488dcfb5b911 -g ddn
 ```
 执行后工具会开启一个web服务并注册到Nacos上面，同时可指定多个Nacos地址，此功能方便运维排查Nacos注册问题。
 - -i 指定注册到Nacos的IP地址
+- --namespace 指定命名空间
+- -g 指定组
 - -p 指定开启端口
 - --url 指定Nacos服务地址，多个地址,号分开
 - -n 指定注册到Nacos的服务名称
