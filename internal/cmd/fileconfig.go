@@ -18,7 +18,7 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.6")
+		fmt.Println("Version: 0.6.2")
 	},
 }
 
@@ -51,6 +51,8 @@ func GetConfigFilePath() string {
 func NacosFilePathLoad() {
 	type NewConfig struct {
 		Url               string   `toml:"url"`
+		Namespace         []string `toml:"namespace"`
+		Group             []string `toml:"group"`
 		Container_network []string `toml:"container_network"`
 		Label             []map[string]string
 		Ipfile            string `toml:"ipfile"`
@@ -86,6 +88,19 @@ func NacosFilePathLoad() {
 		}
 		if len(newConfig.Container_network) != 0 {
 			pkg.MaxCidrBlocks = newConfig.Container_network
+		}
+		for _, namespace := range newConfig.Namespace {
+			config.NAMESPACELIST = append(config.NAMESPACELIST, config.NamespaceServer{
+				Namespace:         namespace,
+				NamespaceShowName: namespace,
+				Quota:             200,
+				Type:              2,
+			})
+		}
+		for _, group := range newConfig.Group {
+			if !pkg.InString(group, config.GROUPLIST) {
+				config.GROUPLIST = append(config.GROUPLIST, group)
+			}
 		}
 		IPFilePathLoad()
 		pkg.ContainerdInit()

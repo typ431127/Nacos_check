@@ -21,38 +21,40 @@ import (
 )
 
 var mutex sync.Mutex
+var tablerow []string
 
-func (d *Nacos) GetJson(result_type string) (result interface{}, err error) {
+func (d *Nacos) GetJson(resultType string) (result interface{}, err error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	defer func() {
-		if func_err := recover(); func_err != nil {
+		if funcErr := recover(); funcErr != nil {
 			result = []byte("[]")
 			err = errors.New("error")
 		}
 	}()
 	d.GetNacosInstance()
-	nacos_server := d.Clusterdata[d.Host]
-	if len(nacos_server.HealthInstance) != 0 {
+	nacosServer := d.Clusterdata[d.Host]
+	if len(nacosServer.HealthInstance) != 0 {
 		var nacos NacosFile
-		for _, na := range nacos_server.HealthInstance {
+		for _, na := range nacosServer.HealthInstance {
 			var ta NacosTarget
 			ta.Labels = make(map[string]string)
 			for key, value := range ADDLABEL {
 				ta.Labels[key] = value
 			}
-			ta.Targets = append(ta.Targets, na[2])
-			ta.Labels["namespace"] = na[0]
-			ta.Labels["service"] = na[1]
-			ta.Labels["hostname"] = na[4]
-			ta.Labels["weight"] = na[5]
-			ta.Labels["pid"] = na[6]
-			ta.Labels["ip"] = na[8]
-			ta.Labels["port"] = na[9]
-			ta.Labels["containerd"] = na[7]
+			ta.Targets = append(ta.Targets, na.IpAddr)
+			ta.Labels["namespace"] = na.NamespaceName
+			ta.Labels["service"] = na.ServiceName
+			ta.Labels["hostname"] = na.Hostname
+			ta.Labels["weight"] = na.Weight
+			ta.Labels["pid"] = na.Pid
+			ta.Labels["ip"] = na.Ip
+			ta.Labels["port"] = na.Port
+			ta.Labels["group"] = na.GroupName
+			ta.Labels["containerd"] = na.Container
 			nacos.Data = append(nacos.Data, ta)
 		}
-		if result_type == "json" {
+		if resultType == "json" {
 			result = nacos.Data
 			return result, err
 		}
@@ -93,8 +95,11 @@ func (d *Nacos) WriteFile() {
 		os.Exit(EXITCODE)
 	}
 	file.Close()
-	os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename)
-	fmt.Println("写入成功:", basedir+"/"+filename)
+	if err := os.Rename(basedir+"/.nacos_tmp.json", basedir+"/"+filename); err != nil {
+		fmt.Println("写入失败:", basedir+"/"+filename)
+	} else {
+		fmt.Println("写入成功:", basedir+"/"+filename)
+	}
 }
 
 func (d *Nacos) HttpReq(apiurl string) []byte {
@@ -128,21 +133,25 @@ func (d *Nacos) GetCluster() {
 }
 
 func (d *Nacos) GetNameSpace() {
-	_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", d.DefaultUlr)
-	res := d.HttpReq(_url)
-	err := json.Unmarshal(res, &d.Namespaces)
-	if err != nil {
-		fmt.Println("获取命名空间json异常")
+	if len(NAMESPACELIST) == 0 {
+		_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", d.DefaultUlr)
+		res := d.HttpReq(_url)
+		err := json.Unmarshal(res, &d.Namespaces)
+		if err != nil {
+			fmt.Println("获取命名空间json异常")
+		}
+	} else {
+		d.Namespaces.Data = NAMESPACELIST
 	}
 }
-func (d *Nacos) GetService(namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s", d.DefaultUlr, namespaceId)
+func (d *Nacos) GetService(namespaceId string, group string) []byte {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", d.DefaultUlr, namespaceId, group)
 	res := d.HttpReq(_url)
 	return res
 }
 
-func (d *Nacos) GetInstance(servicename string, namespaceId string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s", d.DefaultUlr, servicename, namespaceId)
+func (d *Nacos) GetInstance(servicename string, namespaceId string, group string) []byte {
+	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", d.DefaultUlr, servicename, namespaceId, group)
 	res := d.HttpReq(_url)
 	return res
 }
@@ -152,42 +161,54 @@ func (d *Nacos) GetV2Upgrade() []byte {
 	res := d.HttpReq(_url)
 	return res
 }
-
+func (d *Nacos) tableAppend(table *tablewriter.Table, data []string) {
+	datastr := strings.Join(data, "-")
+	if !pkg.InString(datastr, tablerow) {
+		tablerow = append(tablerow, datastr)
+		table.Append(data)
+	}
+}
 func (d *Nacos) TableRender() {
-	nacos_server := d.Clusterdata[d.Host]
-	tabletitle := []string{"命名空间", "服务名称", "实例", "健康状态", "主机名", "权重", "PID", "容器"}
+	tablerow = []string{}
+	nacosServer := d.Clusterdata[d.Host]
+	tabletitle := []string{"命名空间", "服务名称", "实例", "健康状态", "主机名", "权重", "容器", "组"}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(tabletitle)
-	for _, v := range nacos_server.HealthInstance {
-		tabledata := v[0:8]
+	for _, v := range nacosServer.HealthInstance {
+		tabledata := []string{v.NamespaceName, v.ServiceName, v.IpAddr, v.Health, v.Hostname, v.Weight, v.Container, v.GroupName}
 		if FIND == "" {
 			table.Append(tabledata)
 		} else {
-			if strings.Contains(v[0], FIND) {
-				table.Append(tabledata)
-			}
-			if strings.Contains(v[1], FIND) {
-				table.Append(tabledata)
-			}
-			if strings.Contains(v[2], FIND) {
-				table.Append(tabledata)
+			for _, find := range FINDLIST {
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
 			}
 		}
 	}
 	fmt.Printf("健康实例:(%d 个)\n", table.NumLines())
 	table.Render()
-	if len(nacos_server.UnHealthInstance) != 0 {
+	if len(nacosServer.UnHealthInstance) != 0 {
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader(tabletitle)
-		for _, v := range d.Healthydataerr {
-			if strings.Contains(v[0], FIND) {
-				table.Append(v)
-			}
-			if strings.Contains(v[1], FIND) {
-				table.Append(v)
-			}
-			if strings.Contains(v[2], FIND) {
-				table.Append(v)
+		for _, v := range nacosServer.UnHealthInstance {
+			tabledata := []string{v.NamespaceName, v.ServiceName, v.IpAddr, v.Health, v.Hostname, v.Weight, v.Container, v.GroupName}
+			for _, find := range FINDLIST {
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
+				if strings.Contains(v.ServiceName, find) {
+					d.tableAppend(table, tabledata)
+				}
 			}
 		}
 		fmt.Printf("异常实例:(%d 个)\n", table.NumLines())
@@ -195,13 +216,13 @@ func (d *Nacos) TableRender() {
 	}
 }
 func (d *Nacos) GetNacosInstance() {
-	cluster_list := []string{d.Host}
+	clusterList := []string{d.Host}
 	d.Clusterdata = make(map[string]ClusterStatus)
 	if CLUSTER {
 		d.GetCluster()
 		var results []gjson.Result
 		var leader gjson.Result
-		if len(gjson.Get(string(d.Cluster), "servers").String()) != 0 {
+		if len(gjson.Get(d.Cluster, "servers").String()) != 0 {
 			leader = gjson.Get(d.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
 			results = gjson.GetMany(d.Cluster, "servers.#.ip", "servers.#.port", "servers.#.state", "servers.#.extendInfo.version", "servers.#.extendInfo.lastRefreshTime")
 		} else {
@@ -221,7 +242,7 @@ func (d *Nacos) GetNacosInstance() {
 			cluster.LastRefreshTime = formatTimeStr
 			key := fmt.Sprintf("%s:%s", results[0].Array()[key].String(), results[1].Array()[key].String())
 			d.Clusterdata[key] = cluster
-			cluster_list = append(cluster_list, key)
+			clusterList = append(clusterList, key)
 		}
 	} else {
 		var cluster ClusterStatus
@@ -232,26 +253,25 @@ func (d *Nacos) GetNacosInstance() {
 		cluster.LastRefreshTime = ""
 		key := fmt.Sprintf("%s:%s", d.Host, d.Port)
 		d.Clusterdata[key] = cluster
-		cluster_list = append(cluster_list, key)
+		clusterList = append(clusterList, key)
 
 	}
 	if !CLUSTER {
-		for _, server := range cluster_list {
+		for _, server := range clusterList {
 			_url := fmt.Sprintf("%s://%s", d.Scheme, server)
 			if _url == d.DefaultUlr {
-				cluster_list = []string{server}
+				clusterList = []string{server}
 			}
 		}
 	}
-	if !CLUSTER && len(cluster_list) != 1 {
+	if !CLUSTER && len(clusterList) != 1 {
 		_url := fmt.Sprintf("%s", d.Host)
-		cluster_list = []string{_url}
+		clusterList = []string{_url}
 	}
-	for _, server := range cluster_list {
-		//NACOSURL = fmt.Sprintf("%s://%s", d.Scheme, server)
+	for _, server := range clusterList {
 		d.GetNameSpace()
 		for _, namespace := range d.Namespaces.Data {
-			res := d.GetService(namespace.Namespace)
+			//res := d.GetService(namespace.Namespace)
 			var ser Service
 			var cluster ClusterStatus
 			cluster = d.Clusterdata[server]
@@ -280,39 +300,54 @@ func (d *Nacos) GetNacosInstance() {
 				cluster.V2Upgrade.InstanceCountV2 = InstanceCountV2
 				cluster.V2Upgrade.SubscribeCountV2 = SubscribeCountV2
 			}
-			json.Unmarshal(res, &ser)
-			for _, se := range ser.Doms {
-				res := d.GetInstance(se, namespace.Namespace)
-				var in Instance
-				err := json.Unmarshal(res, &in)
+			//
+			for _, group := range GROUPLIST {
+				res := d.GetService(namespace.Namespace, group)
+				err := json.Unmarshal(res, &ser)
 				if err != nil {
-					fmt.Println("json序列化错误:%s", err)
+					fmt.Println(err)
 				}
-				for _, host := range in.Hosts {
-					metadataUrl := host.Metadata["dubbo.metadata-service.urls"]
-					u, _ := regexp.Compile("pid=(.+?)&")
-					_tmpmap := make([]string, 0)
-					ipinfo := fmt.Sprintf("%s:%d", host.Ip, host.Port)
-					_tmpmap = append(_tmpmap, namespace.NamespaceShowName, se, ipinfo, strconv.FormatBool(host.Healthy))
-					if PARSEIP {
-						_tmpmap = append(_tmpmap, GetHostName(host.Ip))
-					} else {
-						_tmpmap = append(_tmpmap, host.Ip)
+				for _, se := range ser.Doms {
+					res := d.GetInstance(se, namespace.Namespace, group)
+					var in Instance
+					err := json.Unmarshal(res, &in)
+					if err != nil {
+						fmt.Printf("json序列化错误:%s\n", err)
 					}
-					_tmpmap = append(_tmpmap, fmt.Sprintf("%.1f", host.Weight))
-					pid := u.FindStringSubmatch(metadataUrl)
-					if len(pid) == 2 {
-						_tmpmap = append(_tmpmap, pid[1])
-					} else {
-						_tmpmap = append(_tmpmap, "")
+					for _, host := range in.Hosts {
+						hostname := ""
+						_pid := ""
+						metadataUrl := host.Metadata["dubbo.metadata-service.urls"]
+						u, _ := regexp.Compile("pid=(.+?)&")
+						if PARSEIP {
+							hostname = GetHostName(host.Ip)
+						} else {
+							hostname = host.Ip
+						}
+						pid := u.FindStringSubmatch(metadataUrl)
+						if len(pid) == 2 {
+							_pid = pid[1]
+						}
+						instance := ServerInstance{
+							NamespaceName: namespace.NamespaceShowName,
+							ServiceName:   se,
+							IpAddr:        fmt.Sprintf("%s:%d", host.Ip, host.Port),
+							Health:        strconv.FormatBool(host.Healthy),
+							Hostname:      hostname,
+							Weight:        fmt.Sprintf("%.1f", host.Weight),
+							Pid:           _pid,
+							Container:     strconv.FormatBool(pkg.ContainerdIPCheck(host.Ip)),
+							Ip:            host.Ip,
+							Port:          strconv.Itoa(host.Port),
+							GroupName:     in.GroupName,
+						}
+						if host.Healthy {
+							cluster.HealthInstance = append(cluster.HealthInstance, instance)
+						} else {
+							cluster.UnHealthInstance = append(cluster.UnHealthInstance, instance)
+						}
+						d.Clusterdata[server] = cluster
 					}
-					_tmpmap = append(_tmpmap, strconv.FormatBool(pkg.ContainerdIPCheck(host.Ip)), host.Ip, strconv.Itoa(host.Port))
-					if host.Healthy {
-						cluster.HealthInstance = append(cluster.HealthInstance, _tmpmap)
-					} else {
-						cluster.UnHealthInstance = append(cluster.UnHealthInstance, _tmpmap)
-					}
-					d.Clusterdata[server] = cluster
 				}
 			}
 		}

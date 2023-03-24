@@ -7,24 +7,29 @@ import (
 )
 
 var (
-	NACOSURL     string // nacos url地址
-	NACOSURLLIST []string
-	FIND         string            // 模糊匹配服务
-	WRITEFILE    string            // prometheus 字段 文件路径
-	IPFILE       string            // ip hostname 解析文件
-	PARSEIP      bool              // 是否启用ip解析
-	CLUSTER      bool              // 集群状态
-	IPDATA       map[string]string // 全部ip数据
-	EXITCODE     int               // 全局退出状态码
-	VERSION      bool              // 版本
-	WATCH        bool              // 监控
-	SECOND       time.Duration     // 监控服务间隔
-	V2UPGRADE    bool              // 2.0版本升级详情
-	EXPORTJSON   bool              // 导出json
-	WEB          bool              // 开启webapi
-	WEBPORT      string            // web端口
-	ADDLABEL     map[string]string
-	Na           *Nacos
+	NACOSURL      string // nacos url地址
+	NACOSURLLIST  []string
+	FIND          string // 模糊匹配服务
+	FINDLIST      []string
+	NAMESPACE     string
+	NAMESPACELIST []NamespaceServer
+	GROUP         string // 分组
+	GROUPLIST     []string
+	WRITEFILE     string            // prometheus 字段 文件路径
+	IPFILE        string            // ip hostname 解析文件
+	PARSEIP       bool              // 是否启用ip解析
+	CLUSTER       bool              // 集群状态
+	IPDATA        map[string]string // 全部ip数据
+	EXITCODE      int               // 全局退出状态码
+	VERSION       bool              // 版本
+	WATCH         bool              // 监控
+	SECOND        time.Duration     // 监控服务间隔
+	V2UPGRADE     bool              // 2.0版本升级详情
+	EXPORTJSON    bool              // 导出json
+	WEB           bool              // 开启webapi
+	WEBPORT       string            // web端口
+	ADDLABEL      map[string]string
+	Na            *Nacos
 )
 
 type Nacos struct {
@@ -48,11 +53,23 @@ type ClusterStatus struct {
 	State            string
 	Version          string
 	LastRefreshTime  string
-	HealthInstance   [][]string
-	UnHealthInstance [][]string
+	HealthInstance   []ServerInstance
+	UnHealthInstance []ServerInstance
 	V2Upgrade        V2Upgrade
 }
-
+type ServerInstance struct {
+	NamespaceName string `json:"namespaceName"`
+	ServiceName   string `json:"serviceName"`
+	IpAddr        string `json:"ipAddr"`
+	Health        string `json:"health"`
+	Hostname      string `json:"hostname"`
+	Weight        string `json:"weight"`
+	Pid           string `json:"pid"`
+	Container     string `json:"container"`
+	Ip            string `json:"ip"`
+	Port          string `json:"port"`
+	GroupName     string `json:"groupName"`
+}
 type V2Upgrade struct {
 	Upgraded             bool
 	IsAll20XVersion      bool
@@ -83,6 +100,7 @@ type Service struct {
 }
 
 type Instance struct {
+	GroupName       string      `json:"groupName"`
 	Hosts           []Instances `json:"hosts"`
 	Dom             string      `json:"dom"`
 	Name            string      `json:"name"`

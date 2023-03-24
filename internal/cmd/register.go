@@ -21,14 +21,20 @@ var registerCmd = &cobra.Command{
 		Webserver()
 	},
 }
-var svcname string
-var ipaddr string
+var (
+	svcname     string
+	groupname   string
+	namespaceid string
+	ipaddr      string
+)
 
 func init() {
 	ips := pkg.GetIps()
 	registerCmd.Flags().StringVarP(&config.WEBPORT, "port", "p", ":8099", "web 端口")
 	registerCmd.Flags().StringVarP(&svcname, "name", "n", "nacos-check", "nacos注册名称")
 	registerCmd.Flags().StringVarP(&ipaddr, "ip", "i", ips[0], "指定nacos注册客户端ip")
+	registerCmd.Flags().StringVarP(&namespaceid, "namespace", "", "", "指定要注册到的namespaceid")
+	registerCmd.Flags().StringVarP(&groupname, "groupname", "g", "DEFAULT_GROUP", "指定注册的分组名称")
 	rootCmd.AddCommand(registerCmd)
 }
 
@@ -52,9 +58,11 @@ func Register() {
 			Scheme:      parse.Scheme,
 		})
 	}
+	clientConfigs := constant.ClientConfig{NamespaceId: namespaceid}
 	namingClient, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ServerConfigs: serverConfigs,
+			ClientConfig:  &clientConfigs,
 		},
 	)
 	success, err := namingClient.RegisterInstance(vo.RegisterInstanceParam{
@@ -66,8 +74,8 @@ func Register() {
 		Healthy:     true,
 		Ephemeral:   true,
 		Metadata:    map[string]string{"code": "golang"},
-		ClusterName: "DEFAULT",       // default value is DEFAULT
-		GroupName:   "DEFAULT_GROUP", // default value is DEFAULT_GROUP
+		ClusterName: "DEFAULT", // default value is DEFAULT
+		GroupName:   groupname, // default value is DEFAULT_GROUP
 	})
 	if success {
 		fmt.Println("Nacos注册成功")

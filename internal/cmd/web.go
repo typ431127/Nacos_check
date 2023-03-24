@@ -16,6 +16,7 @@ var webCmd = &cobra.Command{
 }
 
 func init() {
+	webCmd.Flags().StringVarP(&config.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
 	webCmd.Flags().StringVarP(&config.WEBPORT, "port", "p", ":8099", "web 端口")
 	rootCmd.AddCommand(webCmd)
 }

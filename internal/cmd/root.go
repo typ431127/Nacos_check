@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"nacos-check/internal/config"
+	"nacos-check/pkg"
 	"net/url"
 	"os"
 	"strings"
@@ -57,6 +58,22 @@ var rootCmd = &cobra.Command{
 			fmt.Println("url解析错误!")
 			os.Exit(config.EXITCODE)
 		}
+		config.FINDLIST = strings.Split(config.FIND, ",")
+		for _, namespace := range strings.Split(config.NAMESPACE, ",") {
+			if len(strings.TrimSpace(namespace)) != 0 {
+				config.NAMESPACELIST = append(config.NAMESPACELIST, config.NamespaceServer{
+					Namespace:         namespace,
+					NamespaceShowName: namespace,
+					Quota:             200,
+					Type:              2,
+				})
+			}
+		}
+		for _, group := range strings.Split(config.GROUP, ",") {
+			if !pkg.InString(group, config.GROUPLIST) {
+				config.GROUPLIST = append(config.GROUPLIST, group)
+			}
+		}
 		Nacos.DefaultUlr = config.NACOSURLLIST[0]
 		Nacos.Host = u.Host
 		Nacos.Scheme = u.Scheme
@@ -68,6 +85,8 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&config.NACOSURL, "url", "u", "http://dev-k8s-nacos:8848", "Nacos地址")
+	rootCmd.Flags().StringVarP(&config.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
+	rootCmd.PersistentFlags().StringVarP(&config.GROUP, "group", "", "DEFAULT_GROUP", "指定分组 多个分组 group1,group2")
 	rootCmd.Flags().StringVarP(&config.WRITEFILE, "write", "o", "", "导出json文件, prometheus 自动发现文件路径")
 	rootCmd.Flags().StringVarP(&config.IPFILE, "ipfile", "i", "salt_ip.json", "ip解析文件")
 	rootCmd.Flags().StringVarP(&config.FIND, "find", "f", "", "查找服务")
