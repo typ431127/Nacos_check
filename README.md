@@ -209,6 +209,9 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 - --url 指定Nacos服务地址，多个地址,号分开
 - -n 指定注册到Nacos的服务名称
 
+![image](https://user-images.githubusercontent.com/20376675/227511138-ed155939-87dd-424f-8f05-df65c53ce6c5.png)
+![image](https://user-images.githubusercontent.com/20376675/227510971-71660720-c30c-4a15-a923-15fa72bca7be.png)
+
 >注意: 仅注册功能支持多个nacos地址写法
 #### 主机名解析
 因为默认只获取到主机ip，获取不到主机名,可以指定ipfile解析主机名，有条件可以二次开发对接自己cmdb, 文件格式如下 (可选)
@@ -225,6 +228,8 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 
 ### 效果
 ![image](images/1.png)
+![image](https://user-images.githubusercontent.com/20376675/227511254-35590027-49ea-4518-a715-521c8393bf64.png)
+
 
 ### grafana 展示出图
 
