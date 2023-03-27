@@ -5,6 +5,9 @@ url = "http://nacos-0:8848"
 # 定义容器网段
 container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
 
+# 账号密码  https://nacos.io/zh-cn/docs/auth.html
+#username = ""
+#password = ""
 # 定义指定的namespaceid (可选,默认所有)
 # 等同命令行 --namespace id1,id2
 namespace = ["df7bee71-33ff-49ae-9adc-d9412b3d2ddb","dc7bca41-5aeb-417e-9876-488dcfb5b911"]

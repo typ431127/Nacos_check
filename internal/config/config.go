@@ -15,6 +15,8 @@ var (
 	NAMESPACELIST []NamespaceServer
 	GROUP         string // 分组
 	GROUPLIST     []string
+	USERNAME      string            // 账户
+	PASSWORD      string            // 密码
 	WRITEFILE     string            // prometheus 字段 文件路径
 	IPFILE        string            // ip hostname 解析文件
 	PARSEIP       bool              // 是否启用ip解析
@@ -38,6 +40,7 @@ type Nacos struct {
 	DefaultUlr     string
 	Host           string
 	Scheme         string
+	Token          string
 	Port           string
 	Healthydata    [][]string
 	Healthydataerr [][]string

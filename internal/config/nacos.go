@@ -7,10 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/tidwall/gjson"
 	"gopkg.in/ini.v1"
-	"io/ioutil"
 	"nacos-check/pkg"
-	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -102,40 +99,30 @@ func (d *Nacos) WriteFile() {
 	}
 }
 
-func (d *Nacos) HttpReq(apiurl string) []byte {
-	req, _ := http.NewRequest("GET", apiurl, nil)
-	u, err := url.Parse(apiurl)
-	res, err := d.Client.Do(req)
-	if err != nil {
-		panic(err)
+func (d *Nacos) Auth() {
+	_url := fmt.Sprintf("%s/nacos/v1/auth/login", d.DefaultUlr)
+	formData := map[string]string{
+		"username": USERNAME,
+		"password": PASSWORD,
 	}
-	if res.StatusCode != 200 {
-		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/operator/servers" {
-			//panic(fmt.Sprintf("单机不支持集群,请求状态码异常:%d", res.StatusCode))
-			_url := fmt.Sprintf("%s/nacos/v2/core/cluster/node/list", d.DefaultUlr)
-			return d.HttpReq(_url)
-		}
-		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/upgrade/ops/metrics" {
-			panic(fmt.Sprintf("此版本不支持查看升级状态:%d", res.StatusCode))
-		}
-		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
+	res := d.POST(_url, formData)
+	if len(gjson.GetBytes(res, "accessToken").String()) != 0 {
+		fmt.Println("Authentication successful...")
+		d.Token = gjson.GetBytes(res, "accessToken").String()
+	} else {
+		fmt.Println("Authentication failed!")
 	}
-	defer res.Body.Close()
-	resp, _ := ioutil.ReadAll(res.Body)
-	return resp
-
 }
-
 func (d *Nacos) GetCluster() {
 	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", d.DefaultUlr)
-	res := d.HttpReq(_url)
+	res := d.GET(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
 	if len(NAMESPACELIST) == 0 {
 		_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", d.DefaultUlr)
-		res := d.HttpReq(_url)
+		res := d.GET(_url)
 		err := json.Unmarshal(res, &d.Namespaces)
 		if err != nil {
 			fmt.Println("获取命名空间json异常")
@@ -146,19 +133,19 @@ func (d *Nacos) GetNameSpace() {
 }
 func (d *Nacos) GetService(namespaceId string, group string) []byte {
 	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", d.DefaultUlr, namespaceId, group)
-	res := d.HttpReq(_url)
+	res := d.GET(_url)
 	return res
 }
 
 func (d *Nacos) GetInstance(servicename string, namespaceId string, group string) []byte {
 	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", d.DefaultUlr, servicename, namespaceId, group)
-	res := d.HttpReq(_url)
+	res := d.GET(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
 	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", d.DefaultUlr)
-	res := d.HttpReq(_url)
+	res := d.GET(_url)
 	return res
 }
 func (d *Nacos) tableAppend(table *tablewriter.Table, data []string) {

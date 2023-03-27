@@ -18,7 +18,7 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.6.2")
+		fmt.Println("Version: 0.7")
 	},
 }
 
@@ -51,6 +51,8 @@ func GetConfigFilePath() string {
 func NacosFilePathLoad() {
 	type NewConfig struct {
 		Url               string   `toml:"url"`
+		Username          string   `toml:"username"`
+		Password          string   `toml:"password"`
 		Namespace         []string `toml:"namespace"`
 		Group             []string `toml:"group"`
 		Container_network []string `toml:"container_network"`
@@ -81,6 +83,12 @@ func NacosFilePathLoad() {
 		if err != nil {
 			fmt.Println("配置文件错误格式错误", configfile)
 			return
+		}
+		if len(config.USERNAME) == 0 {
+			config.USERNAME = newConfig.Username
+		}
+		if len(config.PASSWORD) == 0 {
+			config.PASSWORD = newConfig.Password
 		}
 		config.IPFILE = newConfig.Ipfile
 		if config.NACOSURL == "http://dev-k8s-nacos:8848" {
