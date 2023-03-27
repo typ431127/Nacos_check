@@ -5,6 +5,7 @@ golang 运维萌新，学习项目... 😊
 
 首先我并不是一个专业的开发人员，我只是一个小运维，此工具只为方便工作开发，代码水平一般，大佬勿喷..........
 
+- 支持Nacos v1 v2版本,支持集群模式
 - 快速查找注册服务，支持匹配名称，命名空间，端口，ip，多个服务模糊匹配
 - 支持指定命名空间，默认全部
 - 支持命令行导出json
@@ -12,10 +13,12 @@ golang 运维萌新，学习项目... 😊
 - 支持Prometheus自动发现，`file_sd`和`http_sd_configs`
 - 查看集群状态，以及v1升级v2接口详情
 - 支持注册本身到Nacos集群
+- 支持本地配置文件使用
+- 支持Nacos用户名密码鉴权
 
 ### 安装
 ```shell
-curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.6.1/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
+curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.7/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
 tar xvf nacos-check_Linux_x86_64.tar.gz
 chmod +x nacos-check
 ./nacos-check --url https://nacos地址
@@ -47,8 +50,10 @@ Flags:
       --json                   输出json
   -l, --lable stringToString   添加标签 -l env=dev,pro=java (default [])
       --namespace string       指定命名空间ID 多个: id1,id2,id3
+      --password string        密码
   -s, --second duration        监控服务间隔刷新时间 (default 5s)
   -u, --url string             Nacos地址 (default "http://dev-k8s-nacos:8848")
+      --username string        账户 (default "nacos")
   -w, --watch                  监控服务
   -o, --write string           导出json文件, prometheus 自动发现文件路径
 
@@ -117,6 +122,8 @@ http_sd_configs 自动发现
 开启webapi并添加自定义label
 ./nacos_check-linux-amd64 web --url http://nacos-0.xxxx:8848 -l env=dev,pro=test-pro,k8s=true
 ```
+> 注意鉴权模式下Token有过期时间，开启鉴权后默认1小时刷新一次token,nacos默认配置token过期时间为5小时，根据需要可调整web模式下--refresh参数
+
 **基于http_sd_configs的自动发现**
 ```yml
 scrape_configs:
@@ -167,6 +174,10 @@ url = "http://nacos-0:8848"
 
 # 定义容器网段
 container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
+
+# 账号密码  https://nacos.io/zh-cn/docs/auth.html
+#username = ""
+#password = ""
 
 # 定义指定的namespaceid (可选,默认所有)
 # 等同命令行 --namespace id1,id2
