@@ -15,6 +15,7 @@ golang 运维萌新，学习项目... 😊
 - 支持注册本身到Nacos集群
 - 支持本地配置文件使用
 - 支持Nacos用户名密码鉴权
+- 支持自定义contextpath
 
 ### 安装
 ```shell
@@ -44,6 +45,8 @@ Available Commands:
   web         开启web api Prometheus http_sd_configs
 
 Flags:
+      --cluster                全集群查找
+      --contextpath string     server.servlet.contextPath (default "/nacos")
   -f, --find string            查找服务
       --group string           指定分组 多个分组 group1,group2 (default "DEFAULT_GROUP")
   -h, --help                   help for nacos-check

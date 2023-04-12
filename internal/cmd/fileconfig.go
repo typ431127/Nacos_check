@@ -18,7 +18,7 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.7")
+		fmt.Println("Version: 0.7.1")
 	},
 }
 
