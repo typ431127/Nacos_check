@@ -12,11 +12,20 @@ import (
 func PreFunc() {
 	NacosFilePathLoad()
 	for _, _url := range strings.Split(config.NACOSURL, ",") {
+		u, _ := url.Parse(_url)
+		if u.Scheme != "http" && u.Scheme != "https:" {
+			fmt.Println("The URL is malformed:", _url)
+			os.Exit(config.EXITCODE)
+		}
 		config.NACOSURLLIST = append(config.NACOSURLLIST, _url)
 	}
 	u, err := url.Parse(config.NACOSURLLIST[0])
 	if err != nil {
 		fmt.Println("url解析错误!")
+		os.Exit(config.EXITCODE)
+	}
+	if !strings.HasPrefix(config.CONTEXTPATH, "/") {
+		fmt.Println("CONTEXT-PATH解析错误!")
 		os.Exit(config.EXITCODE)
 	}
 	config.FINDLIST = strings.Split(config.FIND, ",")

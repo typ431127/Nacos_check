@@ -58,7 +58,12 @@ func Register() {
 			Scheme:      parse.Scheme,
 		})
 	}
-	clientConfigs := constant.ClientConfig{NamespaceId: namespaceid, Username: config.USERNAME, Password: config.PASSWORD}
+	var clientConfigs constant.ClientConfig
+	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
+		clientConfigs = constant.ClientConfig{NamespaceId: namespaceid, Username: config.USERNAME, Password: config.PASSWORD}
+	} else {
+		clientConfigs = constant.ClientConfig{NamespaceId: namespaceid}
+	}
 	namingClient, err := clients.NewNamingClient(
 		vo.NacosClientParam{
 			ServerConfigs: serverConfigs,

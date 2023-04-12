@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
 		case config.EXPORTJSON:
-			jsondata, err := Nacos.GetJson("byte")
+			jsondata, err := Nacos.GetJson("byte", false)
 			if err != nil {
 				fmt.Println("获取json发生错误")
 				os.Exit(2)
@@ -54,11 +54,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&config.NACOSURL, "url", "u", "http://dev-k8s-nacos:8848", "Nacos地址")
 	rootCmd.PersistentFlags().StringVarP(&config.USERNAME, "username", "", "nacos", "账户")
 	rootCmd.PersistentFlags().StringVarP(&config.PASSWORD, "password", "", "", "密码")
+	rootCmd.PersistentFlags().StringVarP(&config.CONTEXTPATH, "contextpath", "", "/nacos", "server.servlet.contextPath")
 	rootCmd.Flags().StringVarP(&config.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
 	rootCmd.PersistentFlags().StringVarP(&config.GROUP, "group", "", "DEFAULT_GROUP", "指定分组 多个分组 group1,group2")
 	rootCmd.Flags().StringVarP(&config.WRITEFILE, "write", "o", "", "导出json文件, prometheus 自动发现文件路径")
 	rootCmd.Flags().StringVarP(&config.IPFILE, "ipfile", "i", "salt_ip.json", "ip解析文件")
 	rootCmd.Flags().StringVarP(&config.FIND, "find", "f", "", "查找服务")
+	rootCmd.Flags().BoolVarP(&config.CLUSTER, "cluster", "", false, "全集群查找")
 	rootCmd.Flags().BoolVarP(&config.EXPORTJSON, "json", "", false, "输出json")
 	rootCmd.Flags().BoolVarP(&config.WATCH, "watch", "w", false, "监控服务")
 	rootCmd.Flags().DurationVarP(&config.SECOND, "second", "s", 5*time.Second, "监控服务间隔刷新时间")

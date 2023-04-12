@@ -20,7 +20,7 @@ import (
 var mutex sync.Mutex
 var tablerow []string
 
-func (d *Nacos) GetJson(resultType string) (result interface{}, err error) {
+func (d *Nacos) GetJson(resultType string, web bool) (result interface{}, err error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	defer func() {
@@ -29,42 +29,45 @@ func (d *Nacos) GetJson(resultType string) (result interface{}, err error) {
 			err = errors.New("error")
 		}
 	}()
-	d.GetNacosInstance()
-	nacosServer := d.Clusterdata[d.Host]
-	if len(nacosServer.HealthInstance) != 0 {
-		var nacos NacosFile
-		for _, na := range nacosServer.HealthInstance {
-			var ta NacosTarget
-			ta.Labels = make(map[string]string)
-			for key, value := range ADDLABEL {
-				ta.Labels[key] = value
+	if web {
+		d.GetNacosInstance()
+	}
+	var nacos NacosFile
+	for _, nacosServer := range d.Clusterdata {
+		if len(nacosServer.HealthInstance) != 0 {
+			for _, na := range nacosServer.HealthInstance {
+				var ta NacosTarget
+				ta.Labels = make(map[string]string)
+				for key, value := range ADDLABEL {
+					ta.Labels[key] = value
+				}
+				ta.Targets = append(ta.Targets, na.IpAddr)
+				ta.Labels["namespace"] = na.NamespaceName
+				ta.Labels["service"] = na.ServiceName
+				ta.Labels["hostname"] = na.Hostname
+				ta.Labels["weight"] = na.Weight
+				ta.Labels["pid"] = na.Pid
+				ta.Labels["ip"] = na.Ip
+				ta.Labels["port"] = na.Port
+				ta.Labels["group"] = na.GroupName
+				ta.Labels["containerd"] = na.Container
+				nacos.Data = append(nacos.Data, ta)
 			}
-			ta.Targets = append(ta.Targets, na.IpAddr)
-			ta.Labels["namespace"] = na.NamespaceName
-			ta.Labels["service"] = na.ServiceName
-			ta.Labels["hostname"] = na.Hostname
-			ta.Labels["weight"] = na.Weight
-			ta.Labels["pid"] = na.Pid
-			ta.Labels["ip"] = na.Ip
-			ta.Labels["port"] = na.Port
-			ta.Labels["group"] = na.GroupName
-			ta.Labels["containerd"] = na.Container
-			nacos.Data = append(nacos.Data, ta)
 		}
-		if resultType == "json" {
-			result = nacos.Data
-			return result, err
-		}
-		data, err := json.MarshalIndent(&nacos.Data, "", "  ")
-		if err != nil {
-			fmt.Println("json序列化失败!")
-			result = []byte("[]")
-			return result, err
-		}
-		result = data
+	}
+
+	if resultType == "json" {
+		result = nacos.Data
 		return result, err
 	}
-	result = []byte("[]")
+	data, err := json.MarshalIndent(&nacos.Data, "", "  ")
+	if err != nil {
+		fmt.Println("json序列化失败!")
+		result = []byte("[]")
+		return result, err
+	}
+	result = data
+	//result = []byte("[]")
 	return result, err
 }
 func (d *Nacos) WriteFile() {
@@ -81,7 +84,7 @@ func (d *Nacos) WriteFile() {
 		os.Exit(2)
 	}
 	defer file.Close()
-	jsondata, err := d.GetJson("byte")
+	jsondata, err := d.GetJson("byte", false)
 	data := make([]byte, 0)
 	var check bool
 	if data, check = jsondata.([]byte); !check {
@@ -100,7 +103,7 @@ func (d *Nacos) WriteFile() {
 }
 
 func (d *Nacos) Auth() {
-	_url := fmt.Sprintf("%s/nacos/v1/auth/login", d.DefaultUlr)
+	_url := fmt.Sprintf("%s%s/v1/auth/login", d.DefaultUlr, CONTEXTPATH)
 	formData := map[string]string{
 		"username": USERNAME,
 		"password": PASSWORD,
@@ -114,14 +117,14 @@ func (d *Nacos) Auth() {
 	}
 }
 func (d *Nacos) GetCluster() {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/operator/servers", d.DefaultUlr)
+	_url := fmt.Sprintf("%s%s/v1/ns/operator/servers", d.DefaultUlr, CONTEXTPATH)
 	res := d.GET(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
 	if len(NAMESPACELIST) == 0 {
-		_url := fmt.Sprintf("%s/nacos/v1/console/namespaces", d.DefaultUlr)
+		_url := fmt.Sprintf("%s%s/v1/console/namespaces", d.DefaultUlr, CONTEXTPATH)
 		res := d.GET(_url)
 		err := json.Unmarshal(res, &d.Namespaces)
 		if err != nil {
@@ -131,20 +134,21 @@ func (d *Nacos) GetNameSpace() {
 		d.Namespaces.Data = NAMESPACELIST
 	}
 }
-func (d *Nacos) GetService(namespaceId string, group string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", d.DefaultUlr, namespaceId, group)
+func (d *Nacos) GetService(url string, namespaceId string, group string) []byte {
+	_url := fmt.Sprintf("%s%s/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", url, CONTEXTPATH, namespaceId, group)
 	res := d.GET(_url)
 	return res
 }
 
-func (d *Nacos) GetInstance(servicename string, namespaceId string, group string) []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", d.DefaultUlr, servicename, namespaceId, group)
+func (d *Nacos) GetInstance(url string, servicename string, namespaceId string, group string) []byte {
+	_url := fmt.Sprintf("%s%s/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", url, CONTEXTPATH, servicename, namespaceId, group)
+	//fmt.Println(_url)
 	res := d.GET(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
-	_url := fmt.Sprintf("%s/nacos/v1/ns/upgrade/ops/metrics", d.DefaultUlr)
+	_url := fmt.Sprintf("%s%s/v1/ns/upgrade/ops/metrics", d.DefaultUlr, CONTEXTPATH)
 	res := d.GET(_url)
 	return res
 }
@@ -161,20 +165,22 @@ func (d *Nacos) TableRender() {
 	tabletitle := []string{"命名空间", "服务名称", "实例", "健康状态", "主机名", "权重", "容器", "组"}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(tabletitle)
-	for _, v := range nacosServer.HealthInstance {
-		tabledata := []string{v.NamespaceName, v.ServiceName, v.IpAddr, v.Health, v.Hostname, v.Weight, v.Container, v.GroupName}
-		if FIND == "" {
-			table.Append(tabledata)
-		} else {
-			for _, find := range FINDLIST {
-				if strings.Contains(v.ServiceName, find) {
-					d.tableAppend(table, tabledata)
-				}
-				if strings.Contains(v.ServiceName, find) {
-					d.tableAppend(table, tabledata)
-				}
-				if strings.Contains(v.ServiceName, find) {
-					d.tableAppend(table, tabledata)
+	for _, nacosServer := range d.Clusterdata {
+		for _, v := range nacosServer.HealthInstance {
+			tabledata := []string{v.NamespaceName, v.ServiceName, v.IpAddr, v.Health, v.Hostname, v.Weight, v.Container, v.GroupName}
+			if FIND == "" {
+				d.tableAppend(table, tabledata)
+			} else {
+				for _, find := range FINDLIST {
+					if strings.Contains(v.ServiceName, find) {
+						d.tableAppend(table, tabledata)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.tableAppend(table, tabledata)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.tableAppend(table, tabledata)
+					}
 				}
 			}
 		}
@@ -229,7 +235,9 @@ func (d *Nacos) GetNacosInstance() {
 			cluster.LastRefreshTime = formatTimeStr
 			key := fmt.Sprintf("%s:%s", results[0].Array()[key].String(), results[1].Array()[key].String())
 			d.Clusterdata[key] = cluster
-			clusterList = append(clusterList, key)
+			if !pkg.InString(key, clusterList) {
+				clusterList = append(clusterList, key)
+			}
 		}
 	} else {
 		var cluster ClusterStatus
@@ -240,8 +248,9 @@ func (d *Nacos) GetNacosInstance() {
 		cluster.LastRefreshTime = ""
 		key := fmt.Sprintf("%s:%s", d.Host, d.Port)
 		d.Clusterdata[key] = cluster
-		clusterList = append(clusterList, key)
-
+		if !pkg.InString(key, clusterList) {
+			clusterList = append(clusterList, key)
+		}
 	}
 	if !CLUSTER {
 		for _, server := range clusterList {
@@ -256,9 +265,11 @@ func (d *Nacos) GetNacosInstance() {
 		clusterList = []string{_url}
 	}
 	for _, server := range clusterList {
+		//fmt.Println(server)
 		d.GetNameSpace()
 		for _, namespace := range d.Namespaces.Data {
 			//res := d.GetService(namespace.Namespace)
+			_url := fmt.Sprintf("%s://%s", d.Scheme, server)
 			var ser Service
 			var cluster ClusterStatus
 			cluster = d.Clusterdata[server]
@@ -289,13 +300,13 @@ func (d *Nacos) GetNacosInstance() {
 			}
 			//
 			for _, group := range GROUPLIST {
-				res := d.GetService(namespace.Namespace, group)
+				res := d.GetService(_url, namespace.Namespace, group)
 				err := json.Unmarshal(res, &ser)
 				if err != nil {
 					fmt.Println(err)
 				}
 				for _, se := range ser.Doms {
-					res := d.GetInstance(se, namespace.Namespace, group)
+					res := d.GetInstance(_url, se, namespace.Namespace, group)
 					var in Instance
 					err := json.Unmarshal(res, &in)
 					if err != nil {

@@ -12,6 +12,7 @@ var (
 	FIND          string // 模糊匹配服务
 	FINDLIST      []string
 	NAMESPACE     string
+	CONTEXTPATH   string //
 	NAMESPACELIST []NamespaceServer
 	GROUP         string // 分组
 	GROUPLIST     []string

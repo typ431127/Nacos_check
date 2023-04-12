@@ -23,6 +23,7 @@ tar xvf nacos-check_Linux_x86_64.tar.gz
 chmod +x nacos-check
 ./nacos-check --url https://nacos地址
 ```
+可以把文件放入/usr/bin或者windows path环境变量里面，随时使用cmd调用命令
 
 ### 使用帮助
 

@@ -18,6 +18,7 @@ var webCmd = &cobra.Command{
 }
 
 func init() {
+	webCmd.Flags().BoolVarP(&config.CLUSTER, "cluster", "", false, "启用全集群查找")
 	webCmd.Flags().StringVarP(&config.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
 	webCmd.Flags().DurationVarP(&Refreshtime, "refresh", "", time.Second*3600, "Token刷新时间,默认3600")
 	webCmd.Flags().StringVarP(&config.WEBPORT, "port", "p", ":8099", "web 端口")
@@ -33,7 +34,7 @@ func response(c *gin.Context) {
 		c.JSON(404, "404")
 		return
 	}
-	result, err := Nacos.GetJson("json")
+	result, err := Nacos.GetJson("json", true)
 	if err != nil {
 		c.JSON(500, []string{})
 		return
