@@ -32,16 +32,20 @@ var rootCmd = &cobra.Command{
 		case config.WRITEFILE != "":
 			Nacos.WriteFile()
 		default:
-			fmt.Println("Nacos:", config.NACOSURL)
+			if config.STDOUT == "table" {
+				fmt.Println("Nacos:", config.NACOSURL)
+			} else {
+				fmt.Printf("[Nacos](%s)\n", config.NACOSURL)
+			}
 			if config.WATCH {
 				fmt.Printf("监控模式 刷新时间:%s/次\n", config.SECOND)
 				for {
 					Nacos.GetNacosInstance()
-					Nacos.TableRender()
+					Nacos.Render()
 					time.Sleep(config.SECOND)
 				}
 			}
-			Nacos.TableRender()
+			Nacos.Render()
 		}
 		Nacos.Client.CloseIdleConnections()
 	},
@@ -64,6 +68,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&config.EXPORTJSON, "json", "", false, "输出json")
 	rootCmd.Flags().BoolVarP(&config.WATCH, "watch", "w", false, "监控服务")
 	rootCmd.Flags().DurationVarP(&config.SECOND, "second", "s", 5*time.Second, "监控服务间隔刷新时间")
+	rootCmd.Flags().StringVarP(&config.STDOUT, "stdout", "", "table", "输出类型 table / markdown")
 	rootCmd.PersistentFlags().StringToStringVarP(&config.ADDLABEL, "lable", "l", map[string]string{}, "添加标签 -l env=dev,pro=java")
 }
 

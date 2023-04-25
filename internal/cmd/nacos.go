@@ -11,6 +11,8 @@ import (
 
 func PreFunc() {
 	NacosFilePathLoad()
+	IPFilePathLoad()
+	pkg.ContainerdInit()
 	for _, _url := range strings.Split(config.NACOSURL, ",") {
 		u, _ := url.Parse(_url)
 		if u.Scheme != "http" && u.Scheme != "https:" {

@@ -31,6 +31,7 @@ var (
 	EXPORTJSON    bool              // 导出json
 	WEB           bool              // 开启webapi
 	WEBPORT       string            // web端口
+	STDOUT        string            // 输出类型
 	ADDLABEL      map[string]string
 	Na            *Nacos
 )

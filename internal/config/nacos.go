@@ -208,6 +208,65 @@ func (d *Nacos) TableRender() {
 		table.Render()
 	}
 }
+func (d *Nacos) markdowntmpl(v ServerInstance) {
+	if !pkg.InString(v.IpAddr, tablerow) {
+		tablerow = append(tablerow, v.IpAddr)
+		status := ""
+		if v.Health == "true" {
+			status = "<font color=common_green1_color>正常</font>"
+		} else {
+			status = "<font color=common_green1_color>异常</font>"
+		}
+		fmt.Printf("---\n- 服务: %s\n- IP: %s\n- 主机: %s\n- 状态: %s\n", v.ServiceName, v.IpAddr, v.Hostname, status)
+	}
+}
+func (d *Nacos) MarkdownRender() {
+	for _, nacosServer := range d.Clusterdata {
+		for _, v := range nacosServer.HealthInstance {
+			if FIND == "" {
+				d.markdowntmpl(v)
+			} else {
+				for _, find := range FINDLIST {
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+				}
+			}
+		}
+		//异常实例
+		for _, v := range nacosServer.UnHealthInstance {
+			if FIND == "" {
+				d.markdowntmpl(v)
+			} else {
+				for _, find := range FINDLIST {
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+					if strings.Contains(v.ServiceName, find) {
+						d.markdowntmpl(v)
+					}
+				}
+			}
+		}
+	}
+	fmt.Printf("---\n实例数量:%d\n", len(tablerow))
+}
+func (d *Nacos) Render() {
+	if STDOUT == "table" {
+		d.TableRender()
+	} else {
+		d.MarkdownRender()
+	}
+}
 func (d *Nacos) GetNacosInstance() {
 	clusterList := []string{d.Host}
 	d.Clusterdata = make(map[string]ClusterStatus)
