@@ -16,10 +16,11 @@ golang 运维萌新，学习项目... 😊
 - 支持本地配置文件使用
 - 支持Nacos用户名密码鉴权
 - 支持自定义contextpath
+- 支持Table和Markdown格式输出
 
 ### 安装
 ```shell
-curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.7/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
+curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.7.2/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
 tar xvf nacos-check_Linux_x86_64.tar.gz
 chmod +x nacos-check
 ./nacos-check --url https://nacos地址
@@ -56,6 +57,7 @@ Flags:
       --namespace string       指定命名空间ID 多个: id1,id2,id3
       --password string        密码
   -s, --second duration        监控服务间隔刷新时间 (default 5s)
+      --stdout string          输出类型 table / markdown (default "table")
   -u, --url string             Nacos地址 (default "http://dev-k8s-nacos:8848")
       --username string        账户 (default "nacos")
   -w, --watch                  监控服务
@@ -245,7 +247,8 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 ![image](images/1.png)
 ![image](https://user-images.githubusercontent.com/20376675/227511254-35590027-49ea-4518-a715-521c8393bf64.png)
 
-
+### 对接机器人执行命令查询
+![image](images/bot.png)
 ### grafana 展示出图
 
 grafana控制台导入`grafana.json` 此模板默认匹配blackbox_exporter
