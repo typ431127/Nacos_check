@@ -34,7 +34,7 @@ func response(c *gin.Context) {
 		c.JSON(404, "404")
 		return
 	}
-	result, err := Nacos.GetJson("json", true)
+	result, err := config.Nacos.GetJson("json", true)
 	if err != nil {
 		c.JSON(500, []string{})
 		return
@@ -61,7 +61,7 @@ func RefreshToken() {
 	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
 		go func() {
 			for {
-				Nacos.Auth()
+				config.Nacos.Auth()
 				time.Sleep(Refreshtime)
 			}
 		}()

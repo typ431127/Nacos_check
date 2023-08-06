@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"nacos-check/internal/config"
+	"nacos-check/internal/core"
 	"os"
 	"time"
 )
 
-var Nacos config.Nacos
 var rootCmd = &cobra.Command{
 	Use:   "nacos-check",
 	Short: "Nacos",
@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
 		case config.EXPORTJSON:
-			jsondata, err := Nacos.GetJson("byte", false)
+			jsondata, err := config.Nacos.GetJson("byte", false)
 			if err != nil {
 				fmt.Println("获取json发生错误")
 				os.Exit(2)
@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 			fmt.Println(string(data))
 			os.Exit(0)
 		case config.WRITEFILE != "":
-			Nacos.WriteFile()
+			config.Nacos.WriteFile()
 		default:
 			if config.STDOUT == "table" {
 				fmt.Println("Nacos:", config.NACOSURL)
@@ -40,17 +40,17 @@ var rootCmd = &cobra.Command{
 			if config.WATCH {
 				fmt.Printf("监控模式 刷新时间:%s/次\n", config.SECOND)
 				for {
-					Nacos.GetNacosInstance()
-					Nacos.Render()
+					config.Nacos.GetNacosInstance()
+					config.Nacos.Render()
 					time.Sleep(config.SECOND)
 				}
 			}
-			Nacos.Render()
+			config.Nacos.Render()
 		}
-		Nacos.Client.CloseIdleConnections()
+		config.Nacos.Client.CloseIdleConnections()
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		PreFunc()
+		core.PreFunc()
 	},
 }
 

@@ -1,4 +1,4 @@
-package cmd
+package core
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 )
 
 func PreFunc() {
+	config.Nacos = &config.NacosConfig{}
 	NacosFilePathLoad()
 	IPFilePathLoad()
 	pkg.ContainerdInit()
@@ -46,13 +47,13 @@ func PreFunc() {
 			config.GROUPLIST = append(config.GROUPLIST, group)
 		}
 	}
-	Nacos.DefaultUlr = config.NACOSURLLIST[0]
-	Nacos.Host = u.Host
-	Nacos.Scheme = u.Scheme
-	Nacos.Port = u.Port()
+	config.Nacos.DefaultUlr = config.NACOSURLLIST[0]
+	config.Nacos.Host = u.Host
+	config.Nacos.Scheme = u.Scheme
+	config.Nacos.Port = u.Port()
 	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
-		Nacos.Auth()
+		config.Nacos.Auth()
 	}
-	Nacos.GetNameSpace()
-	Nacos.GetNacosInstance()
+	config.Nacos.GetNameSpace()
+	config.Nacos.GetNacosInstance()
 }

@@ -18,10 +18,10 @@ var clusterCmd = &cobra.Command{
 		if v2upgrade {
 			config.V2UPGRADE = true
 		}
-		Nacos.GetNacosInstance()
+		config.Nacos.GetNacosInstance()
 		tablecluser := tablewriter.NewWriter(os.Stdout)
 		tablecluser.SetHeader([]string{"节点", "端口", "状态", "版本", "刷新时间", "健康实例", "异常实例"})
-		for _, key := range Nacos.Clusterdata {
+		for _, key := range config.Nacos.Clusterdata {
 			tablecluser.Append([]string{
 				key.Ip,
 				key.Port,
@@ -33,12 +33,12 @@ var clusterCmd = &cobra.Command{
 			})
 		}
 		//leader := gjson.Get(Nacos.Cluster, "servers.0.extendInfo.raftMetaData.metaDataMap.naming_instance_metadata.leader")
-		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), Nacos.Leader)
+		fmt.Printf("Nacos集群状态: (数量:%d)\n集群Master: %s\n", tablecluser.NumLines(), config.Nacos.Leader)
 		tablecluser.Render()
 		if v2upgrade {
 			tablecluser := tablewriter.NewWriter(os.Stdout)
 			tablecluser.SetHeader([]string{"节点", "双写", "v2服务", "v2实例", "v1服务", "v1实例", "upgraded", "全部V2"})
-			for _, key := range Nacos.Clusterdata {
+			for _, key := range config.Nacos.Clusterdata {
 				tablecluser.Append([]string{
 					key.Ip,
 					strconv.FormatBool(key.V2Upgrade.IsDoubleWriteEnabled),

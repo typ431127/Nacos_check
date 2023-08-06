@@ -3,13 +3,13 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 )
 
-func (d *Nacos) GET(apiurl string) []byte {
+func (d *NacosConfig) GET(apiurl string) []byte {
 	u, err := url.Parse(apiurl)
 	if err != nil {
 		panic(err)
@@ -42,12 +42,12 @@ func (d *Nacos) GET(apiurl string) []byte {
 		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
 	}
 	defer res.Body.Close()
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	return resp
 
 }
 
-func (d *Nacos) POST(apiurl string, formData map[string]string) []byte {
+func (d *NacosConfig) POST(apiurl string, formData map[string]string) []byte {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	for key, val := range formData {
@@ -72,6 +72,6 @@ func (d *Nacos) POST(apiurl string, formData map[string]string) []byte {
 		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
 	}
 	defer res.Body.Close()
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	return resp
 }

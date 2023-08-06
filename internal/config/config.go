@@ -24,19 +24,17 @@ var (
 	CLUSTER       bool              // 集群状态
 	IPDATA        map[string]string // 全部ip数据
 	EXITCODE      int               // 全局退出状态码
-	VERSION       bool              // 版本
 	WATCH         bool              // 监控
 	SECOND        time.Duration     // 监控服务间隔
 	V2UPGRADE     bool              // 2.0版本升级详情
 	EXPORTJSON    bool              // 导出json
-	WEB           bool              // 开启webapi
 	WEBPORT       string            // web端口
 	STDOUT        string            // 输出类型
 	ADDLABEL      map[string]string
-	Na            *Nacos
+	Nacos         *NacosConfig
 )
 
-type Nacos struct {
+type NacosConfig struct {
 	Client         http.Client
 	Namespaces     Namespaces
 	DefaultUlr     string

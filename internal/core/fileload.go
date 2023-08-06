@@ -1,42 +1,15 @@
-package cmd
+package core
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/spf13/cobra"
-	"io/ioutil"
+	"io"
 	"nacos-check/internal/config"
 	"nacos-check/pkg"
 	"os"
 	"path/filepath"
 )
-
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "查看版本",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.7.2")
-	},
-}
-
-var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "查看本地配置文件路径",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		configfile := GetConfigFilePath()
-		fmt.Println("本地配置文件路径:", configfile)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(configCmd)
-	rootCmd.AddCommand(versionCmd)
-}
 
 func GetConfigFilePath() string {
 	homedir, err := pkg.HomeDir()
@@ -47,17 +20,16 @@ func GetConfigFilePath() string {
 	configfile := filepath.Join(homedir, ".nacos_conf.toml")
 	return configfile
 }
-
 func NacosFilePathLoad() {
 	type NewConfig struct {
-		Url               string   `toml:"url"`
-		Username          string   `toml:"username"`
-		Password          string   `toml:"password"`
-		Namespace         []string `toml:"namespace"`
-		Group             []string `toml:"group"`
-		Container_network []string `toml:"container_network"`
-		Label             []map[string]string
-		Ipfile            string `toml:"ipfile"`
+		Url              string   `toml:"url"`
+		Username         string   `toml:"username"`
+		Password         string   `toml:"password"`
+		Namespace        []string `toml:"namespace"`
+		Group            []string `toml:"group"`
+		ContainerNetwork []string `toml:"container_network"`
+		Label            []map[string]string
+		Ipfile           string `toml:"ipfile"`
 	}
 	homedir, err := pkg.HomeDir()
 	if err != nil {
@@ -94,8 +66,8 @@ func NacosFilePathLoad() {
 		if config.NACOSURL == "http://dev-k8s-nacos:8848" {
 			config.NACOSURL = newConfig.Url
 		}
-		if len(newConfig.Container_network) != 0 {
-			pkg.MaxCidrBlocks = newConfig.Container_network
+		if len(newConfig.ContainerNetwork) != 0 {
+			pkg.MaxCidrBlocks = newConfig.ContainerNetwork
 		}
 		for _, namespace := range newConfig.Namespace {
 			config.NAMESPACELIST = append(config.NAMESPACELIST, config.NamespaceServer{
@@ -127,7 +99,7 @@ func IPFilePathLoad() {
 			os.Exit(config.EXITCODE)
 		}
 		defer file.Close()
-		bytefile, _ := ioutil.ReadAll(file)
+		bytefile, _ := io.ReadAll(file)
 		if err := json.Unmarshal(bytefile, &config.IPDATA); err != nil {
 			fmt.Println("ip文件解析错误,请确认json格式")
 			config.PARSEIP = false
