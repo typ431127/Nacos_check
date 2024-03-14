@@ -1,4 +1,4 @@
-package config
+package nacos
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/url"
 )
 
-func (d *Nacos) GET(apiurl string) []byte {
+func (d *Nacos) get(apiurl string) []byte {
 	u, err := url.Parse(apiurl)
 	if err != nil {
 		panic(err)
@@ -31,7 +31,7 @@ func (d *Nacos) GET(apiurl string) []byte {
 		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/operator/servers" {
 			//panic(fmt.Sprintf("单机不支持集群,请求状态码异常:%d", res.StatusCode))
 			_url := fmt.Sprintf("%s/nacos/v2/core/cluster/node/list", d.DefaultUlr)
-			return d.GET(_url)
+			return d.get(_url)
 		}
 		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/upgrade/ops/metrics" {
 			panic(fmt.Sprintf("此版本不支持查看升级状态:%d", res.StatusCode))
@@ -47,7 +47,7 @@ func (d *Nacos) GET(apiurl string) []byte {
 
 }
 
-func (d *Nacos) POST(apiurl string, formData map[string]string) []byte {
+func (d *Nacos) post(apiurl string, formData map[string]string) []byte {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	for key, val := range formData {

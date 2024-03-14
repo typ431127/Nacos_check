@@ -17,6 +17,7 @@ golang 运维萌新，学习项目... 😊
 - 支持Nacos用户名密码鉴权
 - 支持自定义contextpath
 - 支持Table和Markdown格式输出
+- 支持实时同步nacos配置信息到本地文件
 
 ### 安装
 ```shell
@@ -40,6 +41,7 @@ Available Commands:
   cluster     集群状态
   completion  Generate the autocompletion script for the specified shell
   config      查看本地配置文件路径
+  config-sync 实时同步nacos配置到本地
   help        Help about any command
   register    注册本实例到Nacos并开启webapi
   version     查看版本
@@ -202,6 +204,29 @@ label = [
 ipfile = "/mnt/cxxxx/ip.json"
 ```
 > 默认优先加载本地配置文件
+
+#### config-sync
+此功能可以将nacos上面的配置信息实时同步到本地文件(试验阶段可能不稳定)
+
+首先在配置文件加入配置信息
+```
+# nacos-sync配置使用
+nacos_sync = [
+    {namespace = "dc7bca41-5xxx",dataId = "java1.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java1.yml"},
+    {namespace = "dc7bca41-5xxx",dataId = "java2.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java2.yml"},
+    {namespace = "dc7bca41-5xxx",dataId = "java3.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java3.yml"}
+]
+```
+
+- namespace 命名空间
+- dest 为要写入的本地文件
+
+**开启实时同步**
+```shell
+./nacos-check config-sync
+```
+
+**建议使用systemctl开启进程守护**
 
 #### docker启动web服务 Prometheus httpd_sd_config 使用
 ```

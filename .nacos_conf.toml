@@ -21,5 +21,10 @@ label = [
     {name = "os",value = "linux"}
 ]
 
+# nacos-sync配置使用
+nacos-sync = [
+    {namespace = "dc7bca41-5aeb-417e-9876-488dcfb5b911",dataId = "ops-inspecion.yml",group = "DEFAULT_GROUP"}
+]
+
 # 定义默认ip解析文件
 ipfile = "/mnt/c/xxx/ip.json"

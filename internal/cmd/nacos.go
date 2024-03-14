@@ -2,38 +2,38 @@ package cmd
 
 import (
 	"fmt"
-	"nacos-check/internal/config"
+	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
 	"net/url"
 	"os"
 	"strings"
 )
 
-func PreFunc() {
-	NacosFilePathLoad()
-	IPFilePathLoad()
+func preFunc() {
+	nacosFilePathLoad()
+	ipconfigLoad()
 	pkg.ContainerdInit()
-	for _, _url := range strings.Split(config.NACOSURL, ",") {
+	for _, _url := range strings.Split(nacos.NACOSURL, ",") {
 		u, _ := url.Parse(_url)
 		if u.Scheme != "http" && u.Scheme != "https:" {
 			fmt.Println("The URL is malformed:", _url)
-			os.Exit(config.EXITCODE)
+			os.Exit(nacos.EXITCODE)
 		}
-		config.NACOSURLLIST = append(config.NACOSURLLIST, _url)
+		nacos.NACOSURLLIST = append(nacos.NACOSURLLIST, _url)
 	}
-	u, err := url.Parse(config.NACOSURLLIST[0])
+	u, err := url.Parse(nacos.NACOSURLLIST[0])
 	if err != nil {
 		fmt.Println("url解析错误!")
-		os.Exit(config.EXITCODE)
+		os.Exit(nacos.EXITCODE)
 	}
-	if !strings.HasPrefix(config.CONTEXTPATH, "/") {
+	if !strings.HasPrefix(nacos.CONTEXTPATH, "/") {
 		fmt.Println("CONTEXT-PATH解析错误!")
-		os.Exit(config.EXITCODE)
+		os.Exit(nacos.EXITCODE)
 	}
-	config.FINDLIST = strings.Split(config.FIND, ",")
-	for _, namespace := range strings.Split(config.NAMESPACE, ",") {
+	nacos.FINDLIST = strings.Split(nacos.FIND, ",")
+	for _, namespace := range strings.Split(nacos.NAMESPACE, ",") {
 		if len(strings.TrimSpace(namespace)) != 0 {
-			config.NAMESPACELIST = append(config.NAMESPACELIST, config.NamespaceServer{
+			nacos.NAMESPACELIST = append(nacos.NAMESPACELIST, nacos.NamespaceServer{
 				Namespace:         namespace,
 				NamespaceShowName: namespace,
 				Quota:             200,
@@ -41,17 +41,14 @@ func PreFunc() {
 			})
 		}
 	}
-	for _, group := range strings.Split(config.GROUP, ",") {
-		if !pkg.InString(group, config.GROUPLIST) {
-			config.GROUPLIST = append(config.GROUPLIST, group)
+	for _, group := range strings.Split(nacos.GROUP, ",") {
+		if !pkg.InString(group, nacos.GROUPLIST) {
+			nacos.GROUPLIST = append(nacos.GROUPLIST, group)
 		}
 	}
-	Nacos.DefaultUlr = config.NACOSURLLIST[0]
-	Nacos.Host = u.Host
-	Nacos.Scheme = u.Scheme
-	Nacos.Port = u.Port()
-	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
-		Nacos.Auth()
+	Nacos = nacos.NewNacosClint(nacos.NACOSURLLIST[0], u.Host, u.Scheme, u.Port())
+	if len(nacos.USERNAME) != 0 && len(nacos.PASSWORD) != 0 {
+		Nacos.WithAuth()
 	}
 	Nacos.GetNameSpace()
 	Nacos.GetNacosInstance()

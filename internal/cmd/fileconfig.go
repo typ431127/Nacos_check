@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"nacos-check/internal/config"
+	"io"
+	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
+	"nacos-check/pkg/fmtd"
 	"os"
 	"path/filepath"
 )
@@ -18,7 +19,7 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.7.2")
+		fmt.Println("Version: 0.7.3")
 	},
 }
 
@@ -48,16 +49,18 @@ func GetConfigFilePath() string {
 	return configfile
 }
 
-func NacosFilePathLoad() {
-	type NewConfig struct {
-		Url               string   `toml:"url"`
-		Username          string   `toml:"username"`
-		Password          string   `toml:"password"`
-		Namespace         []string `toml:"namespace"`
-		Group             []string `toml:"group"`
-		Container_network []string `toml:"container_network"`
-		Label             []map[string]string
-		Ipfile            string `toml:"ipfile"`
+func nacosFilePathLoad() {
+	type Config struct {
+		Url                    string   `toml:"url"`
+		Username               string   `toml:"username"`
+		Password               string   `toml:"password"`
+		Namespace              []string `toml:"namespace"`
+		Group                  []string `toml:"group"`
+		Container_network      []string `toml:"container_network"`
+		Label                  []map[string]string
+		Nacos_sync             []map[string]string `toml:"nacos_sync"`
+		Nacos_sync_contextpath string              `toml:"nacos_sync_contextpath"`
+		Ipfile                 string              `toml:"ipfile"`
 	}
 	homedir, err := pkg.HomeDir()
 	if err != nil {
@@ -66,8 +69,7 @@ func NacosFilePathLoad() {
 	configfile := filepath.Join(homedir, ".nacos_conf.toml")
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("配置文件错误格式错误", configfile, err)
-			os.Exit(2)
+			fmtd.Fatalln("配置文件错误格式错误", configfile, err)
 		}
 	}()
 	if _, err := os.Stat(configfile); err != nil {
@@ -75,30 +77,30 @@ func NacosFilePathLoad() {
 			return
 		}
 	} else {
-		var newConfig NewConfig
+		var newConfig Config
 		_, err := toml.DecodeFile(configfile, &newConfig)
 		for _, label := range newConfig.Label {
-			config.ADDLABEL[label["name"]] = label["value"]
+			nacos.ADDLABEL[label["name"]] = label["value"]
 		}
 		if err != nil {
 			fmt.Println("配置文件错误格式错误", configfile)
 			return
 		}
-		if len(config.USERNAME) == 0 {
-			config.USERNAME = newConfig.Username
+		if len(nacos.USERNAME) == 0 {
+			nacos.USERNAME = newConfig.Username
 		}
-		if len(config.PASSWORD) == 0 {
-			config.PASSWORD = newConfig.Password
+		if len(nacos.PASSWORD) == 0 {
+			nacos.PASSWORD = newConfig.Password
 		}
-		config.IPFILE = newConfig.Ipfile
-		if config.NACOSURL == "http://dev-k8s-nacos:8848" {
-			config.NACOSURL = newConfig.Url
+		nacos.IPFILE = newConfig.Ipfile
+		if nacos.NACOSURL == "http://dev-k8s-nacos:8848" {
+			nacos.NACOSURL = newConfig.Url
 		}
 		if len(newConfig.Container_network) != 0 {
 			pkg.MaxCidrBlocks = newConfig.Container_network
 		}
 		for _, namespace := range newConfig.Namespace {
-			config.NAMESPACELIST = append(config.NAMESPACELIST, config.NamespaceServer{
+			nacos.NAMESPACELIST = append(nacos.NAMESPACELIST, nacos.NamespaceServer{
 				Namespace:         namespace,
 				NamespaceShowName: namespace,
 				Quota:             200,
@@ -106,31 +108,35 @@ func NacosFilePathLoad() {
 			})
 		}
 		for _, group := range newConfig.Group {
-			if !pkg.InString(group, config.GROUPLIST) {
-				config.GROUPLIST = append(config.GROUPLIST, group)
+			if !pkg.InString(group, nacos.GROUPLIST) {
+				nacos.GROUPLIST = append(nacos.GROUPLIST, group)
 			}
 		}
+		if newConfig.Nacos_sync_contextpath == "" {
+			newConfig.Nacos_sync_contextpath = "/nacos"
+		}
+		nacos.FileConfig.ContextPath = newConfig.Nacos_sync_contextpath
+		nacos.FileConfig.Sync = newConfig.Nacos_sync
 	}
 }
 
-func IPFilePathLoad() {
-	if _, err := os.Stat(config.IPFILE); err != nil {
+func ipconfigLoad() {
+	if _, err := os.Stat(nacos.IPFILE); err != nil {
 		if !os.IsExist(err) {
-			config.PARSEIP = false
+			nacos.PARSEIP = false
 			return
 		}
 	} else {
-		config.PARSEIP = true
-		file, err := os.OpenFile(config.IPFILE, os.O_RDONLY, 0644)
+		nacos.PARSEIP = true
+		file, err := os.OpenFile(nacos.IPFILE, os.O_RDONLY, 0644)
 		if err != nil {
-			fmt.Println("打开文件错误")
-			os.Exit(config.EXITCODE)
+			fmtd.Fatalln("打开文件错误")
 		}
 		defer file.Close()
-		bytefile, _ := ioutil.ReadAll(file)
-		if err := json.Unmarshal(bytefile, &config.IPDATA); err != nil {
+		data, _ := io.ReadAll(file)
+		if err := json.Unmarshal(data, &nacos.IPDATA); err != nil {
 			fmt.Println("ip文件解析错误,请确认json格式")
-			config.PARSEIP = false
+			nacos.PARSEIP = false
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/spf13/cobra"
-	"nacos-check/internal/config"
+	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
 	"net/url"
 	"strconv"
@@ -30,7 +30,7 @@ var (
 
 func init() {
 	ips := pkg.GetIps()
-	registerCmd.Flags().StringVarP(&config.WEBPORT, "port", "p", ":8099", "web 端口")
+	registerCmd.Flags().StringVarP(&nacos.WEBPORT, "port", "p", ":8099", "web 端口")
 	registerCmd.Flags().StringVarP(&svcname, "name", "n", "nacos-check", "nacos注册名称")
 	registerCmd.Flags().StringVarP(&ipaddr, "ip", "i", ips[0], "指定nacos注册客户端ip")
 	registerCmd.Flags().StringVarP(&namespaceid, "namespace", "", "", "指定要注册到的namespaceid")
@@ -40,11 +40,11 @@ func init() {
 
 func Register() {
 	var serverConfigs []constant.ServerConfig
-	webportUint, err := strconv.ParseUint(strings.Split(config.WEBPORT, ":")[1], 10, 64)
+	webportUint, err := strconv.ParseUint(strings.Split(nacos.WEBPORT, ":")[1], 10, 64)
 	if err != nil {
 		fmt.Println(err)
 	}
-	for _, _url := range strings.Split(config.NACOSURL, ",") {
+	for _, _url := range strings.Split(nacos.NACOSURL, ",") {
 		parse, _ := url.Parse(_url)
 		_host := strings.Split(parse.Host, ":")[0]
 		parseUint, err := strconv.ParseUint(parse.Port(), 10, 64)
@@ -59,8 +59,8 @@ func Register() {
 		})
 	}
 	var clientConfigs constant.ClientConfig
-	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
-		clientConfigs = constant.ClientConfig{NamespaceId: namespaceid, Username: config.USERNAME, Password: config.PASSWORD}
+	if len(nacos.USERNAME) != 0 && len(nacos.PASSWORD) != 0 {
+		clientConfigs = constant.ClientConfig{NamespaceId: namespaceid, Username: nacos.USERNAME, Password: nacos.PASSWORD}
 	} else {
 		clientConfigs = constant.ClientConfig{NamespaceId: namespaceid}
 	}

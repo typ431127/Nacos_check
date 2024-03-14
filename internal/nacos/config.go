@@ -1,4 +1,4 @@
-package config
+package nacos
 
 import (
 	"go/types"
@@ -33,7 +33,12 @@ var (
 	WEBPORT       string            // web端口
 	STDOUT        string            // 输出类型
 	ADDLABEL      map[string]string
-	Na            *Nacos
+	SyncMap       map[string]string
+	FileConfig    struct {
+		ContextPath string
+		Sync        []map[string]string
+	}
+	Na *Nacos
 )
 
 type Nacos struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"nacos-check/internal/config"
+	"nacos-check/internal/nacos"
 	"os"
 	"strconv"
 )
@@ -14,9 +14,9 @@ var clusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "集群状态",
 	Run: func(cmd *cobra.Command, args []string) {
-		config.CLUSTER = true
+		nacos.CLUSTER = true
 		if v2upgrade {
-			config.V2UPGRADE = true
+			nacos.V2UPGRADE = true
 		}
 		Nacos.GetNacosInstance()
 		tablecluser := tablewriter.NewWriter(os.Stdout)

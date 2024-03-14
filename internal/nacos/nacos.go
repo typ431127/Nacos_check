@@ -1,4 +1,4 @@
-package config
+package nacos
 
 import (
 	"encoding/json"
@@ -20,6 +20,9 @@ import (
 var mutex sync.Mutex
 var tablerow []string
 
+func NewNacosClint(DefaultUlr, Host, Scheme, Port string) *Nacos {
+	return &Nacos{DefaultUlr: DefaultUlr, Host: Host, Scheme: Scheme, Port: Port}
+}
 func (d *Nacos) GetJson(resultType string, web bool) (result interface{}, err error) {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -102,13 +105,14 @@ func (d *Nacos) WriteFile() {
 	}
 }
 
-func (d *Nacos) Auth() {
+// WithAuth nacos认证
+func (d *Nacos) WithAuth() {
 	_url := fmt.Sprintf("%s%s/v1/auth/login", d.DefaultUlr, CONTEXTPATH)
 	formData := map[string]string{
 		"username": USERNAME,
 		"password": PASSWORD,
 	}
-	res := d.POST(_url, formData)
+	res := d.post(_url, formData)
 	if len(gjson.GetBytes(res, "accessToken").String()) != 0 {
 		fmt.Println("Authentication successful...")
 		d.Token = gjson.GetBytes(res, "accessToken").String()
@@ -118,14 +122,14 @@ func (d *Nacos) Auth() {
 }
 func (d *Nacos) GetCluster() {
 	_url := fmt.Sprintf("%s%s/v1/ns/operator/servers", d.DefaultUlr, CONTEXTPATH)
-	res := d.GET(_url)
+	res := d.get(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
 	if len(NAMESPACELIST) == 0 {
 		_url := fmt.Sprintf("%s%s/v1/console/namespaces", d.DefaultUlr, CONTEXTPATH)
-		res := d.GET(_url)
+		res := d.get(_url)
 		err := json.Unmarshal(res, &d.Namespaces)
 		if err != nil {
 			fmt.Println("获取命名空间json异常")
@@ -136,20 +140,20 @@ func (d *Nacos) GetNameSpace() {
 }
 func (d *Nacos) GetService(url string, namespaceId string, group string) []byte {
 	_url := fmt.Sprintf("%s%s/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", url, CONTEXTPATH, namespaceId, group)
-	res := d.GET(_url)
+	res := d.get(_url)
 	return res
 }
 
 func (d *Nacos) GetInstance(url string, servicename string, namespaceId string, group string) []byte {
 	_url := fmt.Sprintf("%s%s/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", url, CONTEXTPATH, servicename, namespaceId, group)
 	//fmt.Println(_url)
-	res := d.GET(_url)
+	res := d.get(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
 	_url := fmt.Sprintf("%s%s/v1/ns/upgrade/ops/metrics", d.DefaultUlr, CONTEXTPATH)
-	res := d.GET(_url)
+	res := d.get(_url)
 	return res
 }
 func (d *Nacos) tableAppend(table *tablewriter.Table, data []string) {

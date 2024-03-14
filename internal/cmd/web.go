@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-	"nacos-check/internal/config"
+	"nacos-check/internal/nacos"
 	"time"
 )
 
@@ -18,10 +18,10 @@ var webCmd = &cobra.Command{
 }
 
 func init() {
-	webCmd.Flags().BoolVarP(&config.CLUSTER, "cluster", "", false, "启用全集群查找")
-	webCmd.Flags().StringVarP(&config.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
+	webCmd.Flags().BoolVarP(&nacos.CLUSTER, "cluster", "", false, "启用全集群查找")
+	webCmd.Flags().StringVarP(&nacos.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
 	webCmd.Flags().DurationVarP(&Refreshtime, "refresh", "", time.Second*3600, "Token刷新时间,默认3600")
-	webCmd.Flags().StringVarP(&config.WEBPORT, "port", "p", ":8099", "web 端口")
+	webCmd.Flags().StringVarP(&nacos.WEBPORT, "port", "p", ":8099", "web 端口")
 	rootCmd.AddCommand(webCmd)
 }
 
@@ -43,7 +43,7 @@ func response(c *gin.Context) {
 }
 
 func Webserver() {
-	fmt.Println("Nacos:", config.NACOSURL)
+	fmt.Println("Nacos:", nacos.NACOSURL)
 	gin.SetMode(gin.DebugMode)
 	RefreshToken()
 	r := gin.Default()
@@ -51,17 +51,17 @@ func Webserver() {
 	{
 		v1.GET("/*route", response)
 	}
-	err := r.Run(config.WEBPORT)
+	err := r.Run(nacos.WEBPORT)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func RefreshToken() {
-	if len(config.USERNAME) != 0 && len(config.PASSWORD) != 0 {
+	if len(nacos.USERNAME) != 0 && len(nacos.PASSWORD) != 0 {
 		go func() {
 			for {
-				Nacos.Auth()
+				Nacos.WithAuth()
 				time.Sleep(Refreshtime)
 			}
 		}()
