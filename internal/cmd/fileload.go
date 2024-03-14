@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/spf13/cobra"
 	"io"
 	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
@@ -13,33 +12,7 @@ import (
 	"path/filepath"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "查看版本",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version: 0.7.3")
-	},
-}
-
-var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "查看本地配置文件路径",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		configfile := GetConfigFilePath()
-		fmt.Println("本地配置文件路径:", configfile)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(configCmd)
-	rootCmd.AddCommand(versionCmd)
-}
-
-func GetConfigFilePath() string {
+func getConfigFilePath() string {
 	homedir, err := pkg.HomeDir()
 	if err != nil {
 		fmt.Println("获取系统家目录获取异常")

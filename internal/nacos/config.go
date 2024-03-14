@@ -16,29 +16,25 @@ var (
 	NAMESPACELIST []NamespaceServer
 	GROUP         string // 分组
 	GROUPLIST     []string
-	USERNAME      string            // 账户
-	PASSWORD      string            // 密码
-	WRITEFILE     string            // prometheus 字段 文件路径
-	IPFILE        string            // ip hostname 解析文件
-	PARSEIP       bool              // 是否启用ip解析
-	CLUSTER       bool              // 集群状态
-	IPDATA        map[string]string // 全部ip数据
-	EXITCODE      int               // 全局退出状态码
-	VERSION       bool              // 版本
-	WATCH         bool              // 监控
-	SECOND        time.Duration     // 监控服务间隔
-	V2UPGRADE     bool              // 2.0版本升级详情
-	EXPORTJSON    bool              // 导出json
-	WEB           bool              // 开启webapi
-	WEBPORT       string            // web端口
-	STDOUT        string            // 输出类型
+	USERNAME      string // 账户
+	PASSWORD      string // 密码
+	WRITEFILE     string // prometheus 字段 文件路径
+	IPDATA        map[string]string
+	IPFILE        string        // ip hostname 解析文件
+	PARSEIP       bool          // 是否启用ip解析
+	CLUSTER       bool          // 集群状态
+	EXITCODE      int           // 全局退出状态码
+	WATCH         bool          // 监控
+	SECOND        time.Duration // 监控服务间隔
+	V2UPGRADE     bool          // 2.0版本升级详情
+	EXPORTJSON    bool          // 导出json 	// 开启webapi
+	WEBPORT       string        // web端口
+	STDOUT        string        // 输出类型
 	ADDLABEL      map[string]string
-	SyncMap       map[string]string
 	FileConfig    struct {
 		ContextPath string
 		Sync        []map[string]string
 	}
-	Na *Nacos
 )
 
 type Nacos struct {
