@@ -14,14 +14,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Sync struct {
-	client config_client.IConfigClient
+	client    config_client.IConfigClient
+	backup    bool
+	timestamp bool
+	format    string
 }
 
-func NewSync() *Sync {
-	return &Sync{}
+func NewSync(backup bool, timestamp bool, format string) *Sync {
+	return &Sync{backup: backup, timestamp: timestamp, format: format}
 }
 
 // runSyncTask 开启子同步任务
@@ -82,6 +86,17 @@ func (c *Sync) runSyncTask(config map[string]string, wg sync.WaitGroup) {
 
 // syncWriteFile 配置写入
 func (c *Sync) syncWriteFile(path string, data []byte) {
+	if c.backup {
+		var formattedTime string
+		if c.timestamp {
+			timestamp := time.Now().Unix()
+			formattedTime = strconv.FormatInt(timestamp, 10)
+		} else {
+			now := time.Now()
+			formattedTime = now.Format(c.format)
+		}
+		path = fmt.Sprintf("%s_%s", path, formattedTime)
+	}
 	err := c.writeFile(path, data)
 	if err != nil {
 		log.Printf("Failed to write configuration file %s %v\n", path, err)
