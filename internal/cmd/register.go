@@ -26,6 +26,7 @@ var (
 	groupname   string
 	namespaceid string
 	ipaddr      string
+	weight      float64
 )
 
 func init() {
@@ -35,6 +36,7 @@ func init() {
 	registerCmd.Flags().StringVarP(&ipaddr, "ip", "i", ips[0], "指定nacos注册客户端ip")
 	registerCmd.Flags().StringVarP(&namespaceid, "namespace", "", "", "指定要注册到的namespaceid")
 	registerCmd.Flags().StringVarP(&groupname, "groupname", "g", "DEFAULT_GROUP", "指定注册的分组名称")
+	registerCmd.Flags().Float64VarP(&weight, "weight", "w", 10, "注册权重")
 	rootCmd.AddCommand(registerCmd)
 }
 
@@ -74,7 +76,7 @@ func Register() {
 		Ip:          ipaddr,
 		Port:        webportUint,
 		ServiceName: svcname,
-		Weight:      10,
+		Weight:      weight,
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,

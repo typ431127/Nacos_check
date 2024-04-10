@@ -3,13 +3,13 @@ package nacos
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 )
 
-func (d *Nacos) get(apiurl string) []byte {
+func (d *Nacos) get(apiurl string) ([]byte, error) {
 	u, err := url.Parse(apiurl)
 	if err != nil {
 		panic(err)
@@ -25,7 +25,7 @@ func (d *Nacos) get(apiurl string) []byte {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if res.StatusCode != 200 {
 		if res.StatusCode == 501 && u.Path == "/nacos/v1/ns/operator/servers" {
@@ -39,11 +39,12 @@ func (d *Nacos) get(apiurl string) []byte {
 		if res.StatusCode == 403 {
 			panic(fmt.Sprintf("%s请求状态码异常:%d 请使用--username --password参数进行鉴权", apiurl, res.StatusCode))
 		}
-		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
+		errmsg := fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode)
+		return []byte{}, fmt.Errorf(errmsg)
 	}
 	defer res.Body.Close()
-	resp, _ := ioutil.ReadAll(res.Body)
-	return resp
+	resp, _ := io.ReadAll(res.Body)
+	return resp, nil
 
 }
 
@@ -72,6 +73,6 @@ func (d *Nacos) post(apiurl string, formData map[string]string) []byte {
 		panic(fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode))
 	}
 	defer res.Body.Close()
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	return resp
 }

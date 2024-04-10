@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
+	"nacos-check/pkg/fmtd"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -14,21 +13,21 @@ func preFunc() {
 	ipconfigLoad()
 	pkg.ContainerdInit()
 	for _, _url := range strings.Split(nacos.NACOSURL, ",") {
-		u, _ := url.Parse(_url)
+		u, err := url.Parse(_url)
+		if err != nil {
+			fmtd.Fatalln(err)
+		}
 		if u.Scheme != "http" && u.Scheme != "https:" {
-			fmt.Println("The URL is malformed:", _url)
-			os.Exit(nacos.EXITCODE)
+			fmtd.Fatalln("The URL is malformed:", _url)
 		}
 		nacos.NACOSURLLIST = append(nacos.NACOSURLLIST, _url)
 	}
 	u, err := url.Parse(nacos.NACOSURLLIST[0])
 	if err != nil {
-		fmt.Println("url解析错误!")
-		os.Exit(nacos.EXITCODE)
+		fmtd.Fatalln("url解析错误!")
 	}
 	if !strings.HasPrefix(nacos.CONTEXTPATH, "/") {
-		fmt.Println("CONTEXT-PATH解析错误!")
-		os.Exit(nacos.EXITCODE)
+		fmtd.Fatalln("CONTEXT-PATH解析错误!")
 	}
 	nacos.FINDLIST = strings.Split(nacos.FIND, ",")
 	for _, namespace := range strings.Split(nacos.NAMESPACE, ",") {

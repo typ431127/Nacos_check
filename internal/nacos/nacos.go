@@ -122,14 +122,14 @@ func (d *Nacos) WithAuth() {
 }
 func (d *Nacos) GetCluster() {
 	_url := fmt.Sprintf("%s%s/v1/ns/operator/servers", d.DefaultUlr, CONTEXTPATH)
-	res := d.get(_url)
+	res, _ := d.get(_url)
 	d.Cluster = string(res)
 }
 
 func (d *Nacos) GetNameSpace() {
 	if len(NAMESPACELIST) == 0 {
 		_url := fmt.Sprintf("%s%s/v1/console/namespaces", d.DefaultUlr, CONTEXTPATH)
-		res := d.get(_url)
+		res, _ := d.get(_url)
 		err := json.Unmarshal(res, &d.Namespaces)
 		if err != nil {
 			fmt.Println("获取命名空间json异常")
@@ -138,22 +138,24 @@ func (d *Nacos) GetNameSpace() {
 		d.Namespaces.Data = NAMESPACELIST
 	}
 }
-func (d *Nacos) GetService(url string, namespaceId string, group string) []byte {
+
+// GetService 获取服务
+func (d *Nacos) GetService(url string, namespaceId string, group string) ([]byte, error) {
 	_url := fmt.Sprintf("%s%s/v1/ns/service/list?pageNo=1&pageSize=500&namespaceId=%s&groupName=%s", url, CONTEXTPATH, namespaceId, group)
-	res := d.get(_url)
-	return res
+	res, err := d.get(_url)
+	return res, err
 }
 
 func (d *Nacos) GetInstance(url string, servicename string, namespaceId string, group string) []byte {
 	_url := fmt.Sprintf("%s%s/v1/ns/instance/list?serviceName=%s&namespaceId=%s&groupName=%s", url, CONTEXTPATH, servicename, namespaceId, group)
 	//fmt.Println(_url)
-	res := d.get(_url)
+	res, _ := d.get(_url)
 	return res
 }
 
 func (d *Nacos) GetV2Upgrade() []byte {
 	_url := fmt.Sprintf("%s%s/v1/ns/upgrade/ops/metrics", d.DefaultUlr, CONTEXTPATH)
-	res := d.get(_url)
+	res, _ := d.get(_url)
 	return res
 }
 func (d *Nacos) tableAppend(table *tablewriter.Table, data []string) {
@@ -363,8 +365,11 @@ func (d *Nacos) GetNacosInstance() {
 			}
 			//
 			for _, group := range GROUPLIST {
-				res := d.GetService(_url, namespace.Namespace, group)
-				err := json.Unmarshal(res, &ser)
+				res, err := d.GetService(_url, namespace.Namespace, group)
+				if err != nil {
+					break
+				}
+				err = json.Unmarshal(res, &ser)
 				if err != nil {
 					fmt.Println(err)
 				}
