@@ -33,12 +33,15 @@ func (c *Sync) runSyncTask(config map[string]string, wg sync.WaitGroup) {
 	defer wg.Done()
 	var serverConfigs []constant.ServerConfig
 	clientConfig := constant.ClientConfig{
-		NamespaceId:         config["namespace"],
-		TimeoutMs:           30000,
-		NotLoadCacheAtStart: true,
-		LogDir:              "/tmp/nacos/log",
-		CacheDir:            "/tmp/nacos/cache",
-		LogLevel:            "error",
+		NamespaceId: config["namespace"],
+		TimeoutMs:   30000,
+		LogDir:      "/tmp/nacos/log",
+		CacheDir:    "/tmp/nacos/cache",
+		LogLevel:    "error",
+	}
+	if len(USERNAME) != 0 && len(PASSWORD) != 0 {
+		clientConfig.Username = USERNAME
+		clientConfig.Password = PASSWORD
 	}
 	for _, _url := range strings.Split(NACOSURL, ",") {
 		parse, _ := url.Parse(_url)
@@ -68,8 +71,17 @@ func (c *Sync) runSyncTask(config map[string]string, wg sync.WaitGroup) {
 		DataId: config["dataId"],
 		Group:  config["group"],
 	})
-	if err != nil {
-		log.Printf("Failed to get configuration %s", config["dest"])
+	if err != nil || len(data) == 0 {
+		log.Printf("Failed to get configuration %s Exit monitoring", config["dest"])
+		err := c.client.CancelListenConfig(vo.ConfigParam{
+			DataId: config["dataId"],
+			Group:  config["group"],
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
+		wg.Done()
+		return
 	} else {
 		c.syncWriteFile(config["dest"], []byte(data))
 	}

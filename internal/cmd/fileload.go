@@ -39,24 +39,29 @@ func nacosFilePathLoad() {
 	if err != nil {
 		homedir = "."
 	}
-	configfile := filepath.Join(homedir, ".nacos_conf.toml")
+	configfilepath := ""
+	if nacos.FileConfig.ConfigFile == "" {
+		configfilepath = filepath.Join(homedir, ".nacos_conf.toml")
+	} else {
+		configfilepath = nacos.FileConfig.ConfigFile
+	}
 	defer func() {
 		if err := recover(); err != nil {
-			fmtd.Fatalln("配置文件错误格式错误", configfile, err)
+			fmtd.Fatalln("配置文件错误格式错误", configfilepath, err)
 		}
 	}()
-	if _, err := os.Stat(configfile); err != nil {
+	if _, err := os.Stat(configfilepath); err != nil {
 		if !os.IsExist(err) {
 			return
 		}
 	} else {
 		var newConfig Config
-		_, err := toml.DecodeFile(configfile, &newConfig)
+		_, err := toml.DecodeFile(configfilepath, &newConfig)
 		for _, label := range newConfig.Label {
 			nacos.ADDLABEL[label["name"]] = label["value"]
 		}
 		if err != nil {
-			fmt.Println("配置文件错误格式错误", configfile)
+			fmt.Println("配置文件错误格式错误", configfilepath)
 			return
 		}
 		if len(nacos.USERNAME) == 0 {

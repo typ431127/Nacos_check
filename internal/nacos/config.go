@@ -32,6 +32,7 @@ var (
 	STDOUT        string        // 输出类型
 	ADDLABEL      map[string]string
 	FileConfig    struct {
+		ConfigFile  string
 		ContextPath string
 		Sync        []map[string]string
 	}

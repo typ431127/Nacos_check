@@ -49,6 +49,7 @@ Available Commands:
 
 Flags:
       --cluster                全集群查找
+      --config string          指定配置文件路径
       --contextpath string     server.servlet.contextPath (default "/nacos")
   -f, --find string            查找服务
       --group string           指定分组 多个分组 group1,group2 (default "DEFAULT_GROUP")
@@ -174,11 +175,13 @@ scrape_configs:
 ```shell
  ./nacos_check-linux-amd64 config
 本地配置文件路径: /root/.nacos_conf.toml
+# 指定配置文件
+ ./nacos_check-linux-amd64 --config k8s.toml
 ```
 `/root/.nacos_conf.toml` 示例
 ```toml
 # nacos url地址
-url = "http://nacos-0:8848"
+url = "http://nacos-0:8848,http://nacos-1:8848"
 
 # 定义容器网段
 container_network = ["172.30.0.0/16","172.16.0.0/16","192.168.0.0/16"]
@@ -202,6 +205,12 @@ label = [
 ]
 
 ipfile = "/mnt/cxxxx/ip.json"
+nacos_sync = [
+    {namespace = "dc7bca41-5xxx",dataId = "java1.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java1.yml"},
+    {namespace = "dc7bca41-5xxx",dataId = "java2.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java2.yml"},
+    {namespace = "dc7bca41-5xxx",dataId = "java3.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java3.yml"}
+]
+
 ```
 > 默认优先加载本地配置文件
 

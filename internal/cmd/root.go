@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"nacos-check/internal/nacos"
+	"nacos-check/pkg/fmtd"
 	"os"
 	"time"
 )
@@ -62,6 +63,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&nacos.CONTEXTPATH, "contextpath", "", "/nacos", "server.servlet.contextPath")
 	rootCmd.Flags().StringVarP(&nacos.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")
 	rootCmd.PersistentFlags().StringVarP(&nacos.GROUP, "group", "", "DEFAULT_GROUP", "指定分组 多个分组 group1,group2")
+	rootCmd.PersistentFlags().StringVarP(&nacos.FileConfig.ConfigFile, "config", "", "", "指定配置文件路径")
 	rootCmd.Flags().StringVarP(&nacos.WRITEFILE, "write", "o", "", "导出json文件, prometheus 自动发现文件路径")
 	rootCmd.Flags().StringVarP(&nacos.IPFILE, "ipfile", "i", "salt_ip.json", "ip解析文件")
 	rootCmd.Flags().StringVarP(&nacos.FIND, "find", "f", "", "查找服务")
@@ -80,7 +82,6 @@ func Execute() {
 		}
 	}()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		fmtd.Fatalln(err)
 	}
 }
