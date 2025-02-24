@@ -3,5 +3,8 @@
 main
 cmd/nacos-check/1.json
 cmd/nacos-check/nacos-check.exe
-
 dist/
+webui/.idea
+webui/.vscode
+webui/node_modules
+
