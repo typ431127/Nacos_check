@@ -283,6 +283,13 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 
 ### 对接机器人执行命令查询
 ![image](images/bot.png)
+
+### 常见问题
+
+#### 访问403
+
+请检查url 用户名密码以及namespace参数，namespace不正确也会403认证失败
+
 ### grafana 展示出图
 
 grafana控制台导入`grafana.json` 此模板默认匹配blackbox_exporter

@@ -37,7 +37,7 @@ func (d *Nacos) get(apiurl string) ([]byte, error) {
 			panic(fmt.Sprintf("此版本不支持查看升级状态:%d", res.StatusCode))
 		}
 		if res.StatusCode == 403 {
-			panic(fmt.Sprintf("%s请求状态码异常:%d 请使用--username --password参数进行鉴权", apiurl, res.StatusCode))
+			panic(fmt.Sprintf("%s请求状态码异常:%d 请使用--username --password --namespace参数进行鉴权", apiurl, res.StatusCode))
 		}
 		errmsg := fmt.Sprintf("%s请求状态码异常:%d", apiurl, res.StatusCode)
 		return []byte{}, fmt.Errorf(errmsg)
