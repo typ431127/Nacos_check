@@ -58,7 +58,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&nacos.NACOSURL, "url", "u", "http://dev-k8s-nacos:8848", "Nacos地址")
-	rootCmd.PersistentFlags().StringVarP(&nacos.USERNAME, "username", "", "nacos", "账户")
+	rootCmd.PersistentFlags().StringVarP(&nacos.USERNAME, "username", "", "", "账户")
 	rootCmd.PersistentFlags().StringVarP(&nacos.PASSWORD, "password", "", "", "密码")
 	rootCmd.PersistentFlags().StringVarP(&nacos.CONTEXTPATH, "contextpath", "", "/nacos", "server.servlet.contextPath")
 	rootCmd.Flags().StringVarP(&nacos.NAMESPACE, "namespace", "", "", "指定命名空间ID 多个: id1,id2,id3")

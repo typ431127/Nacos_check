@@ -48,6 +48,7 @@ func nacosFilePathLoad() {
 	defer func() {
 		if err := recover(); err != nil {
 			fmtd.Fatalln("配置文件错误格式错误", configfilepath, err)
+			os.Exit(2)
 		}
 	}()
 	if _, err := os.Stat(configfilepath); err != nil {
