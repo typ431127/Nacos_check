@@ -20,8 +20,12 @@ var (
 	PASSWORD      string // 密码
 	WRITEFILE     string // prometheus 字段 文件路径
 	IPDATA        map[string]string
-	IPFILE        string        // ip hostname 解析文件
-	PARSEIP       bool          // 是否启用ip解析
+	NETDATA       map[string]string
+	NETCIDR       []string
+	IPFILE        string // ip hostname 解析文件
+	NETWORKFILE   string
+	PARSEIP       bool // 是否启用ip解析
+	PARSENET      bool
 	CLUSTER       bool          // 集群状态
 	EXITCODE      int           // 全局退出状态码
 	WATCH         bool          // 监控
@@ -73,6 +77,7 @@ type ServerInstance struct {
 	Weight        string `json:"weight"`
 	Pid           string `json:"pid"`
 	Container     string `json:"container"`
+	IDC           string `json:"idc"`
 	Ip            string `json:"ip"`
 	Port          string `json:"port"`
 	GroupName     string `json:"groupName"`

@@ -7,6 +7,7 @@ import (
 )
 
 var cidrs []*net.IPNet
+
 var MaxCidrBlocks = []string{
 	"172.30.0.0/16",
 	"172.17.0.0/16",
@@ -19,6 +20,7 @@ func ContainerdInit() {
 		_, cidr, _ := net.ParseCIDR(maxCidrBlock)
 		cidrs[i] = cidr
 	}
+
 }
 
 func ContainerdIPCheck(ip string) bool {
@@ -29,6 +31,12 @@ func ContainerdIPCheck(ip string) bool {
 	}
 	return false
 }
+
+//func IdcNetCIDR(ipaddr string) {
+//	for _, cidr := range nacos.NETDATA {
+//		isIPInCIDR(ipaddr, cidr)
+//	}
+//}
 
 func GetIps() (ips []string) {
 	interfaceAddr, err := net.InterfaceAddrs()

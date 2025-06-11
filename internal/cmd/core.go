@@ -9,8 +9,9 @@ import (
 )
 
 func preFunc() {
-	nacosFilePathLoad()
-	ipconfigLoad()
+	LoadNacosConfig()
+	LoadIPConfig()
+	LoadNetworkConfig()
 	pkg.ContainerdInit()
 	for _, _url := range strings.Split(nacos.NACOSURL, ",") {
 		u, err := url.Parse(_url)

@@ -22,8 +22,8 @@ func getConfigFilePath() string {
 	return configfile
 }
 
-func nacosFilePathLoad() {
-	type Config struct {
+func LoadNacosConfig() {
+	type TomlConfig struct {
 		Url                    string   `toml:"url"`
 		Username               string   `toml:"username"`
 		Password               string   `toml:"password"`
@@ -34,6 +34,7 @@ func nacosFilePathLoad() {
 		Nacos_sync             []map[string]string `toml:"nacos_sync"`
 		Nacos_sync_contextpath string              `toml:"nacos_sync_contextpath"`
 		Ipfile                 string              `toml:"ipfile"`
+		NetworkFile            string              `toml:"networkfile"`
 	}
 	homedir, err := pkg.HomeDir()
 	if err != nil {
@@ -56,9 +57,9 @@ func nacosFilePathLoad() {
 			return
 		}
 	} else {
-		var newConfig Config
-		_, err := toml.DecodeFile(configfilepath, &newConfig)
-		for _, label := range newConfig.Label {
+		var tomlConfig TomlConfig
+		_, err := toml.DecodeFile(configfilepath, &tomlConfig)
+		for _, label := range tomlConfig.Label {
 			nacos.ADDLABEL[label["name"]] = label["value"]
 		}
 		if err != nil {
@@ -66,19 +67,20 @@ func nacosFilePathLoad() {
 			return
 		}
 		if len(nacos.USERNAME) == 0 {
-			nacos.USERNAME = newConfig.Username
+			nacos.USERNAME = tomlConfig.Username
 		}
 		if len(nacos.PASSWORD) == 0 {
-			nacos.PASSWORD = newConfig.Password
+			nacos.PASSWORD = tomlConfig.Password
 		}
-		nacos.IPFILE = newConfig.Ipfile
+		nacos.IPFILE = tomlConfig.Ipfile
+		nacos.NETWORKFILE = tomlConfig.NetworkFile
 		if nacos.NACOSURL == "http://dev-k8s-nacos:8848" {
-			nacos.NACOSURL = newConfig.Url
+			nacos.NACOSURL = tomlConfig.Url
 		}
-		if len(newConfig.Container_network) != 0 {
-			pkg.MaxCidrBlocks = newConfig.Container_network
+		if len(tomlConfig.Container_network) != 0 {
+			pkg.MaxCidrBlocks = tomlConfig.Container_network
 		}
-		for _, namespace := range newConfig.Namespace {
+		for _, namespace := range tomlConfig.Namespace {
 			nacos.NAMESPACELIST = append(nacos.NAMESPACELIST, nacos.NamespaceServer{
 				Namespace:         namespace,
 				NamespaceShowName: namespace,
@@ -86,20 +88,21 @@ func nacosFilePathLoad() {
 				Type:              2,
 			})
 		}
-		for _, group := range newConfig.Group {
+		for _, group := range tomlConfig.Group {
 			if !pkg.InString(group, nacos.GROUPLIST) {
 				nacos.GROUPLIST = append(nacos.GROUPLIST, group)
 			}
 		}
-		if newConfig.Nacos_sync_contextpath == "" {
-			newConfig.Nacos_sync_contextpath = "/nacos"
+		if tomlConfig.Nacos_sync_contextpath == "" {
+			tomlConfig.Nacos_sync_contextpath = "/nacos"
 		}
-		nacos.FileConfig.ContextPath = newConfig.Nacos_sync_contextpath
-		nacos.FileConfig.Sync = newConfig.Nacos_sync
+		nacos.FileConfig.ContextPath = tomlConfig.Nacos_sync_contextpath
+		nacos.FileConfig.Sync = tomlConfig.Nacos_sync
 	}
 }
 
-func ipconfigLoad() {
+// LoadIPConfig 加载ip配置文件
+func LoadIPConfig() {
 	if _, err := os.Stat(nacos.IPFILE); err != nil {
 		if !os.IsExist(err) {
 			nacos.PARSEIP = false
@@ -118,4 +121,35 @@ func ipconfigLoad() {
 			nacos.PARSEIP = false
 		}
 	}
+}
+
+func LoadNetworkConfig() error {
+	if _, err := os.Stat(nacos.NETWORKFILE); err != nil {
+		if !os.IsExist(err) {
+			nacos.PARSENET = false
+			return fmt.Errorf("未找到网络配置文件")
+		}
+	} else {
+		var filedata map[string][]string
+		nacos.NETDATA = make(map[string]string)
+		nacos.PARSENET = true
+		file, err := os.OpenFile(nacos.NETWORKFILE, os.O_RDONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("打开文件错误")
+		}
+		defer file.Close()
+		data, _ := io.ReadAll(file)
+		if err := json.Unmarshal(data, &filedata); err != nil {
+			fmt.Println("network文件解析错误,请确认json格式")
+			nacos.PARSENET = false
+			return fmt.Errorf("network文件解析错误,请确认json格式")
+		}
+		for idc, cidr := range filedata {
+			for _, cidr := range cidr {
+				nacos.NETDATA[cidr] = idc
+				nacos.NETCIDR = append(nacos.NETCIDR, cidr)
+			}
+		}
+	}
+	return nil
 }

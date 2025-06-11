@@ -35,7 +35,7 @@ func response(c *gin.Context) {
 		c.JSON(404, "404")
 		return
 	}
-	result, err := Nacos.GetJson("json", true)
+	result, err := Nacos.GetJSONData("json", true)
 	if err != nil {
 		c.JSON(500, []string{})
 		return

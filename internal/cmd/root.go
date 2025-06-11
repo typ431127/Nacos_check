@@ -18,7 +18,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
 		case nacos.EXPORTJSON:
-			jsondata, err := Nacos.GetJson("byte", false)
+			jsondata, err := Nacos.GetJSONData("byte", false)
 			if err != nil {
 				fmt.Println("获取json发生错误")
 				os.Exit(2)
@@ -66,6 +66,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&nacos.FileConfig.ConfigFile, "config", "", "", "指定配置文件路径")
 	rootCmd.Flags().StringVarP(&nacos.WRITEFILE, "write", "o", "", "导出json文件, prometheus 自动发现文件路径")
 	rootCmd.Flags().StringVarP(&nacos.IPFILE, "ipfile", "i", "salt_ip.json", "ip解析文件")
+	rootCmd.Flags().StringVarP(&nacos.NETWORKFILE, "networkfile", "", "network_config.json", "网段机房配置解析")
 	rootCmd.Flags().StringVarP(&nacos.FIND, "find", "f", "", "查找服务")
 	rootCmd.Flags().BoolVarP(&nacos.CLUSTER, "cluster", "", false, "全集群查找")
 	rootCmd.Flags().BoolVarP(&nacos.EXPORTJSON, "json", "", false, "输出json")

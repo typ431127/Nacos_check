@@ -28,3 +28,5 @@ nacos-sync = [
 
 # 定义默认ip解析文件
 ipfile = "/mnt/c/xxx/ip.json"
+# 定义网段解析
+networkfile = "network.json"

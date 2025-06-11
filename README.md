@@ -6,7 +6,7 @@ golang 运维萌新，学习项目... 😊
 首先我并不是一个专业的开发人员，我只是一个小运维，此工具只为方便工作开发，代码水平一般，大佬勿喷..........
 
 - 支持Nacos v1 v2版本,支持集群模式
-- 快速查找注册服务，支持匹配名称，命名空间，端口，ip，多个服务模糊匹配
+- 快速查找注册服务，支持匹配名称，命名空间，端口，ip，机房集群 多个服务模糊匹配
 - 支持指定命名空间，默认全部
 - 支持命令行导出json
 - 支持自定义Prometheus label
@@ -18,6 +18,7 @@ golang 运维萌新，学习项目... 😊
 - 支持自定义contextpath
 - 支持Table和Markdown格式输出
 - 支持实时同步nacos配置信息到本地文件
+- 支持定义机房集群网段显示服务机房位置
 
 ### 安装
 ```shell
@@ -203,8 +204,11 @@ label = [
     {name = "env",value = "dev"},
     {name = "os",value = "linux"}
 ]
-
+# ip主机名解析文件(可选)
 ipfile = "/mnt/cxxxx/ip.json"
+# 主机cidr网段机房配置文件
+networkfile = "network.json"
+# nacos同步
 nacos_sync = [
     {namespace = "dc7bca41-5xxx",dataId = "java1.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java1.yml"},
     {namespace = "dc7bca41-5xxx",dataId = "java2.yml",group = "DEFAULT_GROUP",dest = "ymlconfig/java2.yml"},
@@ -277,7 +281,37 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
  ./nacos_check-linux-amd64 -i ../ip.json
 ```
 
+#### 机房/集群显示
+
+配置机房对应的ip网段信息，对应大规模跨机房网络注册联调调试
+
+```
+{
+  "公司办公环境":[
+    "192.168.31.0/24",
+    "192.168.30.0/24"
+  ],
+  "公司办公WIFI": [
+    "192.168.200.0/24"
+  ],
+  "办公楼机房":[
+    "192.168.100.0/24"
+  ],
+  "办公楼机房K8S开发环境": [
+    "172.16.0.0/16"
+  ]
+}
+```
+
+```
+配置文件中配置路径
+networkfile = "ddn_network.json"
+```
+
+
+
 ### 效果
+
 ![image](images/1.png)
 ![image](https://user-images.githubusercontent.com/20376675/227511254-35590027-49ea-4518-a715-521c8393bf64.png)
 
