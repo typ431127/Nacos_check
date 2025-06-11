@@ -22,7 +22,7 @@ golang 运维萌新，学习项目... 😊
 
 ### 安装
 ```shell
-curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.7.2/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
+curl  -L https://github.com/typ431127/Nacos_check/releases/download/0.7.7/nacos-check_Linux_x86_64.tar.gz -o nacos-check_Linux_x86_64.tar.gz
 tar xvf nacos-check_Linux_x86_64.tar.gz
 chmod +x nacos-check
 ./nacos-check --url https://nacos地址
