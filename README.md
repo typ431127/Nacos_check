@@ -204,7 +204,7 @@ label = [
     {name = "env",value = "dev"},
     {name = "os",value = "linux"}
 ]
-# ip主机名解析文件(可选)
+# ip主机名解析文件(可选) 
 ipfile = "/mnt/cxxxx/ip.json"
 # 主机cidr网段机房配置文件
 networkfile = "network.json"
@@ -305,6 +305,8 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
 
 ```
 配置文件中配置路径
+注意windows路径为/ 
+networkfile = "C:/Users/xxxxx/ddn_network.json"
 networkfile = "ddn_network.json"
 ```
 
