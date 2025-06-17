@@ -81,6 +81,9 @@ Use "nacos-check [command] --help" for more information about a command.
 ```
 ![image](images/4.png)
 
+#### 机房集群支持
+![image](images/5.png)
+
 #### 查找注册服务
 ```shell
 ./nacos_check-linux-amd64 --url http://nacos-0:8848 -f gateway 
@@ -305,13 +308,42 @@ docker run -itd -e nacos_url=http://nacos-xx.com:8848 -p 8099:8099 typ431127/nac
   ]
 }
 ```
-
+**开启颜色显示**
+```json
+{
+  "公司办公环境|color:Red":[
+    "192.168.31.0/24",
+    "192.168.30.0/24"
+  ],
+  "公司办公WIFI": [
+    "192.168.200.0/24"
+  ],
+  "办公楼机房":[
+    "192.168.100.0/24"
+  ],
+  "办公楼机房K8S开发环境": [
+    "172.16.0.0/16"
+  ],
+  "渡渡鸟的专属物理机":[
+    "192.168.10.120/32"
+  ]
+}
+```
+开启颜色显示需要在网络配置文件中添加`|color:<颜色参数>`
+<颜色参数>
+- Red 红色
+- Green 绿色
+- Blue 蓝色
+- Yellow 黄色
+- Purple 紫色
+- Cyan 青色
 ```
 配置文件中配置路径
 注意windows路径为/ 
 networkfile = "C:/Users/xxxxx/ddn_network.json"
 networkfile = "ddn_network.json"
 ```
+![image](images/5.png)
 
 
 

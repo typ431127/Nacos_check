@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"io"
+	"nacos-check/internal/colors"
 	"nacos-check/internal/nacos"
 	"nacos-check/pkg"
 	"nacos-check/pkg/fmtd"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func getConfigFilePath() string {
@@ -123,6 +125,31 @@ func LoadIPConfig() {
 	}
 }
 
+func getColor(idc string) string {
+	if strings.Contains(idc, "|color:") {
+		parts := strings.Split(idc, "|color:") // 只分割一次
+		if len(parts) != 2 {                   // 确保分割后有两部分
+			return idc // 如果格式不正确，直接返回原始字符串
+		}
+		idc = parts[0]    // 获取 |color: 前的部分
+		color := parts[1] // 获取 |color: 后的部分
+		switch color {
+		case "Red":
+			return fmt.Sprintf("%s%s%s", colors.Red, idc, colors.Reset)
+		case "Green":
+			return fmt.Sprintf("%s%s%s", colors.Green, idc, colors.Reset)
+		case "Yellow":
+			return fmt.Sprintf("%s%s%s", colors.Yellow, idc, colors.Reset)
+		case "Blue":
+			return fmt.Sprintf("%s%s%s", colors.Blue, idc, colors.Reset)
+		case "Purple":
+			return fmt.Sprintf("%s%s%s", colors.Purple, idc, colors.Reset)
+		case "Cyan":
+			return fmt.Sprintf("%s%s%s", colors.Cyan, idc, colors.Reset)
+		}
+	}
+	return idc
+}
 func LoadNetworkConfig() error {
 	if _, err := os.Stat(nacos.NETWORKFILE); err != nil {
 		if !os.IsExist(err) {
@@ -146,7 +173,7 @@ func LoadNetworkConfig() error {
 		}
 		for idc, cidr := range filedata {
 			for _, cidr := range cidr {
-				nacos.NETDATA[cidr] = idc
+				nacos.NETDATA[cidr] = getColor(idc)
 				nacos.NETCIDR = append(nacos.NETCIDR, cidr)
 			}
 		}
