@@ -361,6 +361,17 @@ networkfile = "ddn_network.json"
 
 请检查url 用户名密码以及namespace参数，namespace不正确也会403认证失败
 
+#### 一些服务查询不到
+
+- 如果服务使用非DEFAULT_GROUP注册就会出现查询不到的情况，可以在命令行携带group参数
+```shell
+nacos-check --group common,DEFAULT_GROUP
+```
+- 配置文件定义group
+```shell
+group = ["common","DEFAULT_GROUP"]
+```
+
 ### grafana 展示出图
 
 grafana控制台导入`grafana.json` 此模板默认匹配blackbox_exporter
